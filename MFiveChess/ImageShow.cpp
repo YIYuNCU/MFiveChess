@@ -25,7 +25,7 @@ BOOL ImageShow::DisplayImage(CSize scaledSize, CPoint position, CRect rect, CDC*
         SRCCOPY); // 光栅操作代码,这里使用SRCCOPY将源复制到目标
 
     // 在目标DC上绘制缩放后的图片
-    pDC->BitBlt(position.x, position.y, scaledSize.cx - position.x, scaledSize.cy - position.y, // 目标矩形的左上角和尺寸
+    pDC->BitBlt(position.x, position.y, scaledSize.cx, scaledSize.cy, // 目标矩形的左上角和尺寸
         &memDC, 0, 0, SRCCOPY); // 源DC,源矩形的左上角,光栅操作代码
 
     // 清理资源
@@ -89,7 +89,7 @@ void ImageShow::SaveImageAsPNG(std::string& filename)
 {
     std::string programPath = GetProgramPath();
     CImage image;
-    image.Create(183, 183, 32);
+    image.Create(180, 180, 32);
     filename = programPath+ "\\/" + filename;
     // 获取CImage的DC指针
     HDC hDC = image.GetDC();
@@ -99,7 +99,7 @@ void ImageShow::SaveImageAsPNG(std::string& filename)
     dc.Attach(hDC);
 
     // 在CImage的DC上绘制图像
-    dc.FillSolidRect(0, 0, 183, 183, RGB(255, 231, 186));
+    dc.FillSolidRect(0, 0, 180, 180, RGB(255, 231, 186));
     ImageShow::DrawGrid(&dc);
 
     // 分离临时CDC对象
