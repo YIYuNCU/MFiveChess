@@ -129,16 +129,6 @@ void ImageShow::SaveBoardAsPNG(std::string& filename)
     image.Save(CString(filename.c_str()), Gdiplus::ImageFormatPNG);
 }
 
-void ImageShow::SaveImageAsPNG(const CImage& image, const std::string& filename)
-{
-    // 构建完整的文件路径
-    std::string programPath = GetProgramPath();
-    std::string fullPath = programPath + "\\" + filename;
-
-    // 保存为PNG格式
-    image.Save(CString(fullPath.c_str()), Gdiplus::ImageFormatPNG);
-}
-
 std::string ImageShow::GetProgramPath()
 {
     char buffer[MAX_PATH] = { 0 };
@@ -219,62 +209,48 @@ void ImageShow::ResizeAndSaveImage(const std::string& imagePath, int paneSize)
     TRACE(_T("Image resized and saved successfully: %s\n"), strNewImagePath);
 }
 
-BOOL ImageShow::SaveProgressAsPNG(std::string pathb, std::string pathf, CSize scaledSize, CPoint position)
+CString ImageShow::OnCaptureImage(CDC* pDC,CSize size,CPoint position,std::string savepath,int nownum)
 {
-    // 1. 从pathb读取背景图片
-    CImage imgBackground;
-    if (FAILED(imgBackground.Load(CString(pathb.c_str()))))
+    // 确定截取的区域
+    CRect rectCapture(position.x, position.y, position.x+size.cx, position.y+size.cy);
+
+    // 创建兼容的内存DC和位图对象
+    CDC memDC;
+    memDC.CreateCompatibleDC(pDC);
+
+    CBitmap bitmap;
+    bitmap.CreateCompatibleBitmap(pDC, rectCapture.Width(), rectCapture.Height());
+    CBitmap* pOldBitmap = memDC.SelectObject(&bitmap);
+
+    // 将对话框区域复制到内存DC
+    memDC.BitBlt(0, 0, rectCapture.Width(), rectCapture.Height(),
+        pDC, rectCapture.left, rectCapture.top, SRCCOPY);
+
+    CString outputPath(savepath.c_str());
+    outputPath.Replace(_T(".png"), _T("_progress.png"));
+    int dotIndex = outputPath.Find(L".");
+
+    if (dotIndex != -1)  // 如果找到了点号
     {
-        // 处理读取背景图片失败的情况
-        return FALSE;
+        // 将整数转换为字符串
+        CString numberStr;
+        numberStr.Format(L"%d", nownum);
+
+        // 在点号之前插入整数字符串
+        outputPath.Insert(dotIndex, numberStr);
     }
+    // 保存位图到文件（使用CImage）
+    CImage image;
+    image.Attach((HBITMAP)bitmap.Detach()); // 附加位图到CImage对象
+    image.Save(outputPath, Gdiplus::ImageFormatPNG);
 
-    // 2. 从pathf读取前景图片
-    CImage imgForeground;
-    if (FAILED(imgForeground.Load(CString(pathf.c_str()))))
-    {
-        // 处理读取前景图片失败的情况
-        return FALSE;
-    }
-
-    // 3. 计算前景图片的尺寸，按照题目要求是背景图片尺寸的(1/(18*1.2))倍
-    int foregroundWidth = static_cast<int>(imgBackground.GetWidth() / (18 * 1.2));
-    int foregroundHeight = static_cast<int>(imgBackground.GetHeight() / (18 * 1.2));
-
-    // 4. 计算前景图片在背景图片上的位置
-    int foregroundLeft = position.x - foregroundWidth / 2;
-    int foregroundTop = position.y - foregroundHeight / 2;
-
-    // 5. 创建临时DC进行绘制
-    CDC dc;
-    dc.CreateCompatibleDC(nullptr);
-
-    // 6. 将背景图片绘制到临时DC上
-    CBitmap bmp;
-    bmp.CreateCompatibleBitmap(&dc, imgBackground.GetWidth(), imgBackground.GetHeight());
-    dc.SelectObject(&bmp);
-    imgBackground.AlphaBlend(dc.GetSafeHdc(), 0, 0, scaledSize.cx, scaledSize.cy, 0, 0, imgBackground.GetWidth(), imgBackground.GetHeight());
-
-    // 7. 将前景图片绘制到背景图片上
-    imgForeground.AlphaBlend(dc.GetSafeHdc(), foregroundLeft, foregroundTop, foregroundWidth, foregroundHeight, 0, 0, imgForeground.GetWidth(), imgForeground.GetHeight());
-
-    // 8. 保存绘制后的结果为PNG文件，保留透明通道
-    CString outputPath(pathb.c_str());
-    outputPath.Replace(_T(".png"), _T("_progress.png"));  // 替换为progress.png
-
-    HRESULT hr = imgBackground.Save(outputPath, Gdiplus::ImageFormatPNG);
-    if (FAILED(hr))
-    {
-        // 处理保存文件失败的情况
-        return FALSE;
-    }
-
-    // 9. 清理临时资源
-    dc.DeleteDC();
-    bmp.DeleteObject();
-
-    return TRUE;
+    // 清理资源
+    image.Detach();
+    memDC.SelectObject(pOldBitmap);
+    bitmap.DeleteObject();
+    return outputPath;
 }
+
 
 
 

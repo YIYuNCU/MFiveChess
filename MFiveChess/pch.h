@@ -15,4 +15,5 @@
 #include <Windows.h>
 #include <mutex> 
 #include <gdiplus.h>
+#include <memory>
 #endif //PCH_H

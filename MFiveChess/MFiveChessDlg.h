@@ -41,7 +41,7 @@ protected:
 	CButton Begin_Button;
 	//自定义函数
 protected:
-	void DisplayBoard();
+	bool DisplayBoard();
 	void InitChessBoard();
 	void Chess_Interface(CPoint, bool);
 	CPoint LimitPoint(CPoint& position);
@@ -54,8 +54,13 @@ protected:
 	std::string blackpath = "black.png";
 	SharedMemoryListener listener;
 	std::string dialogpath = "dialog.png";
+	std::string Progress = "Progress\\";
 	bool nowcolor = true;
 	int nowtime = 30;
+	int *nownum = new int;
+	CString nowBoardPath = CString("");
 public:
 	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
 };
+
+void ProcessImage(CDC* DC, CRect size, std::string path, int nownum, CString& BoardPath);

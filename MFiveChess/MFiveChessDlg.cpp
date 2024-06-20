@@ -14,7 +14,8 @@
 
 //自定义头文件
 #include "ImageShow.h"
-
+#include "MFile.h"
+#include "Handle.h"
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
 class CAboutDlg : public CDialogEx
@@ -112,7 +113,7 @@ BOOL CMFiveChessDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-	SetTimer(0, 1000, NULL);
+	SetTimer(0, 300, NULL);
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -173,18 +174,19 @@ HCURSOR CMFiveChessDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-void CMFiveChessDlg::DisplayBoard()
+bool CMFiveChessDlg::DisplayBoard()
 {	
 	GetClientRect(&size);
-	CSize scaledSize(size.Width()-20, size.Height()-20); // 缩放尺寸为对话框大小
-	CPoint position(10, 10); // 绘制位置为(10, 10)
+	CSize scaledSize(size.Width() - 100, size.Height() - 100); // 缩放尺寸为对话框大小
+	CPoint position(50, 80); // 绘制位置为(10, 10)
 	CDC* pDC = GetDC(); // 获取当前窗口的DC
 	if (!ImageShow::DisplayImage(scaledSize, position, pDC,boardpath))
 	{
-		//MessageBox(_T("初始化错误"), _T("ERROR"));
+		MessageBox(_T("初始化错误"), _T("ERROR"));
+		return false;
 	}
 	ReleaseDC(pDC); // 释放DC
-	
+	return true;
 }
 
 void CMFiveChessDlg::OnBnClickedButton1()
@@ -194,10 +196,14 @@ void CMFiveChessDlg::OnBnClickedButton1()
 	//{
 	//	return;
 	//}
+	if (!DisplayBoard())
+	{
+		return;
+	}
 	Begin_Button.ShowWindow(SW_HIDE);
 	Begin_Button.EnableWindow(false);
 	IsBegin = true;
-	DisplayBoard();
+	
 }
 
 
@@ -270,6 +276,9 @@ void CMFiveChessDlg::InitChessBoard()
 	ImageShow::GetPath(whitepath);
 	ImageShow::GetPath(blackpath);
 	ImageShow::SaveBoardAsPNG(boardpath);
+	ImageShow::GetPath(Progress);
+	CreateFolder(CString(Progress.c_str()));
+	*nownum = 0;
 }
 
 void CMFiveChessDlg::OnLButtonUp(UINT nFlags, CPoint point)
@@ -280,6 +289,7 @@ void CMFiveChessDlg::OnLButtonUp(UINT nFlags, CPoint point)
 		Chess_Interface(point, nowcolor);
 		nowcolor = !nowcolor;
 		SetTimer(3, 1000 ,NULL);
+		*nownum += 1;
 	}
 	CDialogEx::OnLButtonUp(nFlags, point);
 }
@@ -287,12 +297,12 @@ void CMFiveChessDlg::OnLButtonUp(UINT nFlags, CPoint point)
 void CMFiveChessDlg::Chess_Interface(CPoint position,bool color = false)
 {
 	LimitPoint(position);
-	CSize scaledSize((size.Width() - 20)/18/1.2, (size.Height() - 20)/18/1.2); // 缩放尺寸为对话框大小
+	CSize scaledSize((size.Width() - 100)/18/1.2, (size.Height() - 100)/18/1.2); // 缩放尺寸为对话框大小
 	double sizex,sizey;
-	sizex = position.x * (size.Width() - 20) / 18;
-	sizey = position.y * (size.Height() - 20) / 18;
-	sizex += 10;
-	sizey += 10;
+	sizex = position.x * (size.Width() - 100) / 18;
+	sizey = position.y * (size.Height() - 100) / 18;
+	sizex += 50;
+	sizey += 80;
 	sizex -= scaledSize.cx / 2;
 	sizey -= scaledSize.cy / 2;
 	CDC* pDC = GetDC(); // 获取当前窗口的DC
@@ -306,18 +316,45 @@ void CMFiveChessDlg::Chess_Interface(CPoint position,bool color = false)
 	{
 		ImageShow::DisplayImage(scaledSize, position, pDC, blackpath);
 	}
-	position.x -= 10;
-	position.y -= 10;
+	ProcessImage(GetDC(), size, Progress + "chess.png", *nownum, nowBoardPath);
 	ReleaseDC(pDC);
+}
+
+void ProcessImage(CDC* DC, CRect size,std::string path,int nownum,CString& BoardPath) 
+{
+	// 使用 std::unique_ptr 管理动态分配的对象
+	std::unique_ptr<ImageShow> pImageShow(new ImageShow);
+	CSize scaledSize((size.Width() - 100) / 18 / 1.2, (size.Height() - 100) / 18 / 1.2); // 缩放尺寸为对话框大小
+	CSize boardsize((size.Width() - 100 + 2 * scaledSize.cx), (size.Width() - 100 + 2 * scaledSize.cy));
+	// 使用对象
+	BoardPath = pImageShow->OnCaptureImage(DC, boardsize, CPoint(50 - (size.Height() - 100) / 18, 80 - (size.Height() - 100) / 18), path, nownum);
+
+	// 离开作用域时，std::unique_ptr 会自动释放内存
 }
 
 CPoint CMFiveChessDlg::LimitPoint(CPoint& position)
 {
 	GetClientRect(&size);
-	double x = position.x - size.left + 0.5 * ((size.Width() - 20) / 18);
-	double y = position.y - size.top + 0.5 * ((size.Width() - 20) / 18);
-	position.x = (x - 10) / ((size.Width() - 20) / 18);
-	position.y = (y - 10) / ((size.Height() - 20) / 18);
+	double x = position.x - size.left + 0.5 * ((size.Width() - 100) / 18);
+	double y = position.y - size.top + 0.5 * ((size.Width() - 100) / 18);
+	position.x = (x - 50) / ((size.Width() - 100) / 18);
+	position.y = (y - 80) / ((size.Height() - 100) / 18);
+	if (position.x > 18)
+	{
+		position.x = 18;
+	}
+	else if(position.x < 0)
+	{
+		position.x = 0;
+	}
+	if (position.y > 18)
+	{
+		position.y = 18;
+	}
+	else if (position.y < 0)
+	{
+		position.y = 0;
+	}
 	return position;
 }
 

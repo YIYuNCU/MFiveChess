@@ -186,6 +186,7 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="Handle.h" />
     <ClInclude Include="ImageShow.h" />
+    <ClInclude Include="MFile.h" />
     <ClInclude Include="MFiveChess.h" />
     <ClInclude Include="MFiveChessDlg.h" />
     <ClInclude Include="MTime.h" />
@@ -196,6 +197,7 @@
   <ItemGroup>
     <ClCompile Include="Handle.cpp" />
     <ClCompile Include="ImageShow.cpp" />
+    <ClCompile Include="MFile.cpp" />
     <ClCompile Include="MFiveChess.cpp" />
     <ClCompile Include="MFiveChessDlg.cpp" />
     <ClCompile Include="MTime.cpp" />
