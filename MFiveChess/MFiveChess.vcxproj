@@ -184,17 +184,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
+    <ClInclude Include="Handle.h" />
     <ClInclude Include="ImageShow.h" />
     <ClInclude Include="MFiveChess.h" />
     <ClInclude Include="MFiveChessDlg.h" />
+    <ClInclude Include="MTime.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Handle.cpp" />
     <ClCompile Include="ImageShow.cpp" />
     <ClCompile Include="MFiveChess.cpp" />
     <ClCompile Include="MFiveChessDlg.cpp" />
+    <ClCompile Include="MTime.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

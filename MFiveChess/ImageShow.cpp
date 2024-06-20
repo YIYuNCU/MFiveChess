@@ -3,7 +3,7 @@
 #include <atlimage.h>
 #include <Windows.h>
 
-BOOL ImageShow::DisplayImage(CSize scaledSize, CPoint position, CRect rect, CDC* pDC,std::string path)
+BOOL ImageShow::DisplayImage(CSize scaledSize, CPoint position, CDC* pDC, std::string path)
 {
     // 从文件读取图片
     CImage image;
@@ -15,25 +15,42 @@ BOOL ImageShow::DisplayImage(CSize scaledSize, CPoint position, CRect rect, CDC*
     // 创建与缩放后尺寸相同的内存DC
     CDC memDC;
     memDC.CreateCompatibleDC(pDC); // 创建与目标DC兼容的内存DC
-    CBitmap bitmap;
-    bitmap.CreateCompatibleBitmap(pDC, scaledSize.cx, scaledSize.cy); // 创建与目标DC兼容的位图
-    CBitmap* pOldBitmap = memDC.SelectObject(&bitmap); // 将位图选入内存DC
+
+    // 创建带有Alpha通道的位图
+    BITMAPINFO bmi;
+    memset(&bmi, 0, sizeof(BITMAPINFO));
+    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth = scaledSize.cx;
+    bmi.bmiHeader.biHeight = -scaledSize.cy; // 负高度表示顶部到底部的颠倒顺序
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 32; // 32位色深，包含Alpha通道
+    bmi.bmiHeader.biCompression = BI_RGB;
+
+    // 创建DIBSection位图
+    void* pvBits;
+    HBITMAP hDIBSection = CreateDIBSection(memDC, &bmi, DIB_RGB_COLORS, &pvBits, NULL, 0);
+    if (hDIBSection == NULL)
+    {
+        return FALSE; // 创建DIBSection失败
+    }
+
+    // 将DIBSection选入内存DC
+    HBITMAP hOldBitmap = static_cast<HBITMAP>(SelectObject(memDC, hDIBSection));
 
     // 在内存DC上绘制缩放后的图片
-    image.StretchBlt(memDC.m_hDC, 0, 0, scaledSize.cx, scaledSize.cy , // 目标矩形的左上角和尺寸
-        0, 0, image.GetWidth(), image.GetHeight(), // 源矩形的左上角和尺寸
-        SRCCOPY); // 光栅操作代码,这里使用SRCCOPY将源复制到目标
+    image.AlphaBlend(memDC, 0, 0, scaledSize.cx, scaledSize.cy, 0, 0, image.GetWidth(), image.GetHeight());
 
-    // 在目标DC上绘制缩放后的图片
-    pDC->BitBlt(position.x, position.y, scaledSize.cx, scaledSize.cy, // 目标矩形的左上角和尺寸
-        &memDC, 0, 0, SRCCOPY); // 源DC,源矩形的左上角,光栅操作代码
+    // 在目标DC上绘制内存DC中的图像
+    AlphaBlend(pDC->GetSafeHdc(), position.x, position.y, scaledSize.cx, scaledSize.cy,
+        memDC.GetSafeHdc(), 0, 0, scaledSize.cx, scaledSize.cy, { AC_SRC_OVER, 0, 255, AC_SRC_ALPHA });
 
     // 清理资源
-    memDC.SelectObject(pOldBitmap); // 将原来的位图选回内存DC
-    bitmap.DeleteObject(); // 删除位图对象
+    SelectObject(memDC, hOldBitmap);
+    DeleteObject(hDIBSection);
 
     return TRUE; // 图片显示成功
 }
+
 
 
 void ImageShow::DrawGrid(CDC* pDC)
@@ -85,12 +102,12 @@ void ImageShow::DrawGrid(CDC* pDC)
     // 恢复原来的画笔
     pDC->SelectObject(pOldPen);
 }
-void ImageShow::SaveImageAsPNG(std::string& filename)
+void ImageShow::SaveBoardAsPNG(std::string& filename)
 {
     std::string programPath = GetProgramPath();
     CImage image;
     image.Create(180, 180, 32);
-    filename = programPath+ "\\/" + filename;
+    filename = programPath+ "\\" + filename;
     // 获取CImage的DC指针
     HDC hDC = image.GetDC();
 
@@ -112,6 +129,16 @@ void ImageShow::SaveImageAsPNG(std::string& filename)
     image.Save(CString(filename.c_str()), Gdiplus::ImageFormatPNG);
 }
 
+void ImageShow::SaveImageAsPNG(const CImage& image, const std::string& filename)
+{
+    // 构建完整的文件路径
+    std::string programPath = GetProgramPath();
+    std::string fullPath = programPath + "\\" + filename;
+
+    // 保存为PNG格式
+    image.Save(CString(fullPath.c_str()), Gdiplus::ImageFormatPNG);
+}
+
 std::string ImageShow::GetProgramPath()
 {
     char buffer[MAX_PATH] = { 0 };
@@ -121,53 +148,133 @@ std::string ImageShow::GetProgramPath()
 }
 void ImageShow::GetPath(std::string& temp)
 {
-    temp = ImageShow::GetProgramPath() + "\\/" + temp;
+    temp = ImageShow::GetProgramPath() + "\\" + temp;
 }
 
-CImage ImageShow::ReadAndResizeImage(const std::string& imagePath,int paneSize)
+void ImageShow::ResizeAndSaveImage(const std::string& imagePath, int paneSize)
 {
     CImage image;
-    image.Load(CA2CT(imagePath.c_str()));
+    if (FAILED(image.Load(CString(imagePath.c_str()))))
+    {
+        TRACE(_T("Failed to load image\n"));
+        return; // 加载失败，可以添加错误处理代码
+    }
 
     int imageWidth = image.GetWidth();
     int imageHeight = image.GetHeight();
 
-    int cellSize = min(imageWidth, imageHeight) / paneSize;
-    double newWidth = cellSize * paneSize * 0.3;
-    double newHeight = cellSize * paneSize *0.3;
+    double cellSize = (double)paneSize;
+    double newWidth = cellSize;
+    double newHeight = cellSize;
 
+    // 创建一个新的 CImage 对象来存储调整大小后的图像
     CImage resizedImage;
-    resizedImage.Create(10 * newWidth, 10 * newHeight, image.GetBPP());
-
-    image.StretchBlt(resizedImage.GetDC(), 0, 0, newWidth, newHeight, 0, 0, imageWidth, imageHeight, SRCCOPY);
-    resizedImage.ReleaseDC();
-
-    return resizedImage;
-}
-
-void ImageShow::ResizeImage(CImage& image, int newWidth, int newHeight) 
-{
-    if (image.IsNull() || (image.GetWidth() == newWidth && image.GetHeight() == newHeight)) 
+    if (!resizedImage.Create(static_cast<int>(10 * newWidth), static_cast<int>(10 * newHeight), image.GetBPP(), image.GetBPP() == 32 ? CImage::createAlphaChannel : 0))
     {
+        TRACE(_T("Failed to create resized image!\n"));
+        return; // 创建失败，可以添加错误处理代码
+    }
+
+    // 使用 StretchBlt 将原始图像绘制到调整大小后的图像中
+    CDC dcResized;
+    if (dcResized.CreateCompatibleDC(NULL))
+    {
+        dcResized.SelectObject(resizedImage);
+
+        CDC dcImage;
+        if (dcImage.Attach(image.GetDC()))
+        {
+            dcResized.StretchBlt(0, 0, static_cast<int>(10 * newWidth), static_cast<int>(10 * newHeight),
+                &dcImage, 0, 0, imageWidth, imageHeight, SRCCOPY);
+            dcImage.Detach();
+            image.ReleaseDC();
+        }
+        else
+        {
+            TRACE(_T("Failed to attach DC for image!\n"));
+            resizedImage.Destroy();
+            return;
+        }
+    }
+    else
+    {
+        TRACE(_T("Failed to create compatible DC!\n"));
+        resizedImage.Destroy();
         return;
     }
 
-    CImage resizedImage;
-    resizedImage.Create(newWidth, newHeight, image.GetBPP());
+    // 构建新的文件名，加上 _temp 后缀
+    CString strImagePath(imagePath.c_str());
+    int dotIndex = strImagePath.ReverseFind('.');
+    CString strNewImagePath = strImagePath.Left(dotIndex) + _T("_temp") + strImagePath.Mid(dotIndex);
 
-    CDC memDC;
-    memDC.CreateCompatibleDC(NULL);
+    // 保存调整大小后的图像到新路径
+    if (FAILED(resizedImage.Save(strNewImagePath)))
+    {
+        TRACE(_T("Failed to save resized image!\n"));
+        return; // 保存失败，可以添加错误处理代码
+    }
 
-    CBitmap bitmap;
-    bitmap.Attach(resizedImage.Detach());
-    CBitmap* pOldBitmap = memDC.SelectObject(&bitmap);
-
-    memDC.SetStretchBltMode(HALFTONE);
-    image.StretchBlt(memDC.m_hDC, 0, 0, newWidth, newHeight, 0, 0, image.GetWidth(), image.GetHeight(), SRCCOPY);
-
-    memDC.SelectObject(pOldBitmap);
-
-    image.Destroy();
-    image.Attach(resizedImage.Detach());
-    resizedImage.Destroy();
+    // 提示保存成功
+    TRACE(_T("Image resized and saved successfully: %s\n"), strNewImagePath);
 }
+
+BOOL ImageShow::SaveProgressAsPNG(std::string pathb, std::string pathf, CSize scaledSize, CPoint position)
+{
+    // 1. 从pathb读取背景图片
+    CImage imgBackground;
+    if (FAILED(imgBackground.Load(CString(pathb.c_str()))))
+    {
+        // 处理读取背景图片失败的情况
+        return FALSE;
+    }
+
+    // 2. 从pathf读取前景图片
+    CImage imgForeground;
+    if (FAILED(imgForeground.Load(CString(pathf.c_str()))))
+    {
+        // 处理读取前景图片失败的情况
+        return FALSE;
+    }
+
+    // 3. 计算前景图片的尺寸，按照题目要求是背景图片尺寸的(1/(18*1.2))倍
+    int foregroundWidth = static_cast<int>(imgBackground.GetWidth() / (18 * 1.2));
+    int foregroundHeight = static_cast<int>(imgBackground.GetHeight() / (18 * 1.2));
+
+    // 4. 计算前景图片在背景图片上的位置
+    int foregroundLeft = position.x - foregroundWidth / 2;
+    int foregroundTop = position.y - foregroundHeight / 2;
+
+    // 5. 创建临时DC进行绘制
+    CDC dc;
+    dc.CreateCompatibleDC(nullptr);
+
+    // 6. 将背景图片绘制到临时DC上
+    CBitmap bmp;
+    bmp.CreateCompatibleBitmap(&dc, imgBackground.GetWidth(), imgBackground.GetHeight());
+    dc.SelectObject(&bmp);
+    imgBackground.AlphaBlend(dc.GetSafeHdc(), 0, 0, scaledSize.cx, scaledSize.cy, 0, 0, imgBackground.GetWidth(), imgBackground.GetHeight());
+
+    // 7. 将前景图片绘制到背景图片上
+    imgForeground.AlphaBlend(dc.GetSafeHdc(), foregroundLeft, foregroundTop, foregroundWidth, foregroundHeight, 0, 0, imgForeground.GetWidth(), imgForeground.GetHeight());
+
+    // 8. 保存绘制后的结果为PNG文件，保留透明通道
+    CString outputPath(pathb.c_str());
+    outputPath.Replace(_T(".png"), _T("_progress.png"));  // 替换为progress.png
+
+    HRESULT hr = imgBackground.Save(outputPath, Gdiplus::ImageFormatPNG);
+    if (FAILED(hr))
+    {
+        // 处理保存文件失败的情况
+        return FALSE;
+    }
+
+    // 9. 清理临时资源
+    dc.DeleteDC();
+    bmp.DeleteObject();
+
+    return TRUE;
+}
+
+
+

@@ -3,7 +3,7 @@
 //
 
 #pragma once
-
+#include "Handle.h"
 
 // CMFiveChessDlg 对话框
 class CMFiveChessDlg : public CDialogEx
@@ -31,10 +31,20 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
+	afx_msg void OnBnClickedButton1();
+	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void OnGetMinMaxInfo(MINMAXINFO* lpMMI);
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	afx_msg void OnMove(int x, int y);
+protected:
+	CButton Begin_Button;
 	//自定义函数
 protected:
-    void DisplayImageExample();
+	void DisplayBoard();
 	void InitChessBoard();
+	void Chess_Interface(CPoint, bool);
+	CPoint LimitPoint(CPoint& position);
 	//自定义变量
 protected:
 	bool IsBegin = false;
@@ -42,14 +52,10 @@ protected:
 	std::string boardpath = "borad.png";
 	std::string whitepath = "white.png";
 	std::string blackpath = "black.png";
-	CImage Black;
-	CImage White;
+	SharedMemoryListener listener;
+	std::string dialogpath = "dialog.png";
+	bool nowcolor = true;
+	int nowtime = 30;
 public:
-	afx_msg void OnBnClickedButton1();
-protected:
-	CButton Begin_Button;
-public:
-	afx_msg void OnSize(UINT nType, int cx, int cy);
-	afx_msg void OnGetMinMaxInfo(MINMAXINFO* lpMMI);
-	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
 };

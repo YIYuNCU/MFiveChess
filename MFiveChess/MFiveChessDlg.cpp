@@ -74,6 +74,9 @@ BEGIN_MESSAGE_MAP(CMFiveChessDlg, CDialogEx)
 	ON_WM_SIZE()
 	ON_WM_GETMINMAXINFO()
 	ON_WM_TIMER()
+	ON_WM_LBUTTONUP()
+	ON_WM_MOVE()
+	ON_WM_SIZING()
 END_MESSAGE_MAP()
 
 
@@ -115,6 +118,14 @@ BOOL CMFiveChessDlg::OnInitDialog()
 
 void CMFiveChessDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
+	if (nID == SC_MOVE || nID == 0xF012)
+	{
+		if (IsBegin)
+		{
+			AfxMessageBox(_T("开始游戏后禁止移动"));
+			return;
+		}
+	}
 	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
 	{
 		CAboutDlg dlgAbout;
@@ -162,15 +173,15 @@ HCURSOR CMFiveChessDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-void CMFiveChessDlg::DisplayImageExample()
+void CMFiveChessDlg::DisplayBoard()
 {	
 	GetClientRect(&size);
-	CSize scaledSize(size.Width()-19, size.Height()-19); // 缩放尺寸为对话框大小
+	CSize scaledSize(size.Width()-20, size.Height()-20); // 缩放尺寸为对话框大小
 	CPoint position(10, 10); // 绘制位置为(10, 10)
 	CDC* pDC = GetDC(); // 获取当前窗口的DC
-	if (!ImageShow::DisplayImage(scaledSize, position, size, pDC,boardpath))
+	if (!ImageShow::DisplayImage(scaledSize, position, pDC,boardpath))
 	{
-		MessageBox(_T("初始化错误"), _T("ERROR"));
+		//MessageBox(_T("初始化错误"), _T("ERROR"));
 	}
 	ReleaseDC(pDC); // 释放DC
 	
@@ -179,21 +190,32 @@ void CMFiveChessDlg::DisplayImageExample()
 void CMFiveChessDlg::OnBnClickedButton1()
 {
 	// TODO: 在此添加控件通知处理程序代码
+	//if (!listener.startListening())
+	//{
+	//	return;
+	//}
 	Begin_Button.ShowWindow(SW_HIDE);
 	Begin_Button.EnableWindow(false);
 	IsBegin = true;
-	DisplayImageExample();
-	
+	DisplayBoard();
 }
 
 
+
 void CMFiveChessDlg::OnSize(UINT nType, int cx, int cy)
-{	
+{
+	if (IsBegin)
+	{
+		AfxMessageBox(_T("开启后禁止改变大小"));
+		return;
+	}
 	CDialogEx::OnSize(nType, cx, cy);
 	// TODO: 在此处添加消息处理程序代码
 	if (IsBegin)
 	{
+		/*GetClientRect(&size);
 		SetTimer(1, 100, NULL);
+		int tsize = (std::min)(cx, cy);*/
 	}
 }
 
@@ -226,7 +248,17 @@ void CMFiveChessDlg::OnTimer(UINT_PTR nIDEvent)
 	}
 	else if (nIDEvent == 2)
 	{
-		DisplayImageExample();
+		DisplayBoard();
+		KillTimer(2);
+	}
+	else if (nIDEvent == 3)
+	{
+		if (--nowtime > 0)
+		{
+			return;
+		}
+		nowcolor = !nowcolor;
+		nowtime = 30;
 		KillTimer(2);
 	}
 	CDialogEx::OnTimer(nIDEvent);
@@ -237,12 +269,79 @@ void CMFiveChessDlg::InitChessBoard()
 	GetClientRect(&size);
 	ImageShow::GetPath(whitepath);
 	ImageShow::GetPath(blackpath);
-	ImageShow::SaveImageAsPNG(boardpath);
-	White = ImageShow::ReadAndResizeImage(whitepath, size.Width() / 18);
-	Black = ImageShow::ReadAndResizeImage(whitepath, size.Width() / 18);
+	ImageShow::SaveBoardAsPNG(boardpath);
+}
+
+void CMFiveChessDlg::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	if (IsBegin)
+	{
+		Chess_Interface(point, nowcolor);
+		nowcolor = !nowcolor;
+		SetTimer(3, 1000 ,NULL);
+	}
+	CDialogEx::OnLButtonUp(nFlags, point);
+}
+
+void CMFiveChessDlg::Chess_Interface(CPoint position,bool color = false)
+{
+	LimitPoint(position);
+	CSize scaledSize((size.Width() - 20)/18/1.2, (size.Height() - 20)/18/1.2); // 缩放尺寸为对话框大小
+	double sizex,sizey;
+	sizex = position.x * (size.Width() - 20) / 18;
+	sizey = position.y * (size.Height() - 20) / 18;
+	sizex += 10;
+	sizey += 10;
+	sizex -= scaledSize.cx / 2;
+	sizey -= scaledSize.cy / 2;
+	CDC* pDC = GetDC(); // 获取当前窗口的DC
+	position.x = sizex;
+	position.y = sizey;
+	if (!color)
+	{
+		ImageShow::DisplayImage(scaledSize, position, pDC, whitepath);
+	}
+	else
+	{
+		ImageShow::DisplayImage(scaledSize, position, pDC, blackpath);
+	}
+	position.x -= 10;
+	position.y -= 10;
+	ReleaseDC(pDC);
+}
+
+CPoint CMFiveChessDlg::LimitPoint(CPoint& position)
+{
+	GetClientRect(&size);
+	double x = position.x - size.left + 0.5 * ((size.Width() - 20) / 18);
+	double y = position.y - size.top + 0.5 * ((size.Width() - 20) / 18);
+	position.x = (x - 10) / ((size.Width() - 20) / 18);
+	position.y = (y - 10) / ((size.Height() - 20) / 18);
+	return position;
+}
+
+void CMFiveChessDlg::OnMove(int x, int y)
+{
+	CDialogEx::OnMove(x, y);
+
+	// TODO: 在此处添加消息处理程序代码
+	GetClientRect(&size);
+	if (IsBegin)
+	{
+		SetTimer(1, 100, NULL);
+	}
 }
 
 
+void CMFiveChessDlg::OnSizing(UINT fwSide, LPRECT pRect)
+{
+	if (IsBegin)
+	{
+		AfxMessageBox(_T("开启后禁止改变大小"));
+		return;
+	}
+	CDialogEx::OnSizing(fwSide, pRect);
 
-
-
+	// TODO: 在此处添加消息处理程序代码
+}

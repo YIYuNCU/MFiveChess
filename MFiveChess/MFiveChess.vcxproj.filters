@@ -36,6 +36,12 @@
     <ClInclude Include="ImageShow.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="MTime.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Handle.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MFiveChess.cpp">
@@ -48,6 +54,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ImageShow.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="MTime.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Handle.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
