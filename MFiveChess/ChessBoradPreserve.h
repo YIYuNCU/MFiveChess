@@ -9,7 +9,7 @@ namespace Evian
         LONG x;
         LONG y;
         BOOL color;
-        CPoint(LONG x0, LONG y0, BOOL color0 );
+        CPoint(LONG x0, LONG y0, BOOL color0);
         static CPoint ERRPOINT();
     };
 }

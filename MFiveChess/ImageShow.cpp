@@ -136,6 +136,8 @@ std::string ImageShow::GetProgramPath()
     std::string::size_type pos = std::string(buffer).find_last_of("\\/");
     return std::string(buffer).substr(0, pos);
 }
+
+
 void ImageShow::GetPath(std::string& temp)
 {
     temp = ImageShow::GetProgramPath() + "\\" + temp;

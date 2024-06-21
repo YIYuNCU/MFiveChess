@@ -199,6 +199,7 @@ void CMFiveChessDlg::OnBnClickedButton1()
 		{
 			return;
 		}
+		SetTimer(4, 100, NULL);
 	}
 	if (!DisplayBoard())
 	{
@@ -339,16 +340,24 @@ void CMFiveChessDlg::OnLButtonUp(UINT nFlags, CPoint point)
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	if (IsBegin)
 	{
+		if (IsAImode)
+		{
+			if (EnableSend)
+			{
+				listener.writePoint(HumanPoint);
+			}
+			else
+			{
+				return;
+			}
+			SetTimer(5,100,NULL);
+		}
 		if (!Chess_Interface(point, nowcolor))
 		{
 			return;
 		}
 		nowcolor = !nowcolor;
 		SetTimer(3, 1000, NULL);
-		if (IsAImode)
-		{
-			SetTimer(4,100,NULL);
-		}
 	}
 	CDialogEx::OnLButtonUp(nFlags, point);
 }

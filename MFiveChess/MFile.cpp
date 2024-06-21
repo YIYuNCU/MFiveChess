@@ -8,6 +8,7 @@ bool FolderExists(const CString& folderPath)
     return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 
+
 bool CreateFolder(const CString& folderPath)
 {
     if (!FolderExists(folderPath))
