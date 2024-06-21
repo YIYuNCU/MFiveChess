@@ -16,4 +16,7 @@
 #include <mutex> 
 #include <gdiplus.h>
 #include <memory>
+#include <iostream>
+#include <stdlib.h> // 为了使用动态内存分配函数
+#include <unordered_map>
 #endif //PCH_H

@@ -4,6 +4,7 @@
 
 #pragma once
 #include "Handle.h"
+#include "ChessBoradPreserve.h"
 
 // CMFiveChessDlg 对话框
 class CMFiveChessDlg : public CDialogEx
@@ -43,8 +44,10 @@ protected:
 protected:
 	bool DisplayBoard();
 	void InitChessBoard();
-	void Chess_Interface(CPoint, bool);
+	bool Chess_Interface(CPoint, bool);
 	CPoint LimitPoint(CPoint& position);
+	void DestroyBoard();
+	void JudgeVictory();
 	//自定义变量
 protected:
 	bool IsBegin = false;
@@ -59,8 +62,16 @@ protected:
 	int nowtime = 30;
 	int *nownum = new int;
 	CString nowBoardPath = CString("");
+	ChessBoardPreserve* preserve = new ChessBoardPreserve;
+	bool IsAImode = false;
+	Point AIPoint;
+	Point HumanPoint;
+	bool EnableSend = false;
+	bool EnableGet = false;
+	int errortimes = 5;
 public:
 	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
+	afx_msg void OnClose();
 };
 
 void ProcessImage(CDC* DC, CRect size, std::string path, int nownum, CString& BoardPath);

@@ -45,6 +45,9 @@
     <ClInclude Include="MFile.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="ChessBoradPreserve.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MFiveChess.cpp">
@@ -66,6 +69,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="MFile.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ChessBoradPreserve.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

@@ -16,6 +16,7 @@
 #include "ImageShow.h"
 #include "MFile.h"
 #include "Handle.h"
+#include "ChessBoradPreserve.h"
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
 class CAboutDlg : public CDialogEx
@@ -191,11 +192,14 @@ bool CMFiveChessDlg::DisplayBoard()
 
 void CMFiveChessDlg::OnBnClickedButton1()
 {
-	// TODO: 在此添加控件通知处理程序代码
-	//if (!listener.startListening())
-	//{
-	//	return;
-	//}
+	 //TODO: 在此添加控件通知处理程序代码
+	if (IsAImode)
+	{
+		if (!listener.startListening(AIPoint))
+		{
+			return;
+		}
+	}
 	if (!DisplayBoard())
 	{
 		return;
@@ -265,7 +269,55 @@ void CMFiveChessDlg::OnTimer(UINT_PTR nIDEvent)
 		}
 		nowcolor = !nowcolor;
 		nowtime = 30;
-		KillTimer(2);
+		KillTimer(3);
+	}
+	else if (nIDEvent == 4)
+	{
+		if (AIPoint.x == -2 && AIPoint.y == -2 && EnableSend == false)
+		{
+			EnableSend == true;
+		}
+		if (AIPoint.x == -1 && AIPoint.y == -2 && EnableGet == false)
+		{
+			EnableGet == true;
+		}
+		if (EnableGet == true && AIPoint.x >= 0 && AIPoint.y >= 0)
+		{
+			CPoint ai(AIPoint.x, AIPoint.y);
+			if (!Chess_Interface(ai, nowcolor))
+			{
+				Point err; err.x = -3; err.y = -3;
+				listener.writePoint(err);
+			}
+			else
+			{
+				Point success; success.x = -1; success.y = -1;
+				listener.writePoint(success);
+				EnableGet = false;
+			}
+		}
+		if (EnableSend == false && EnableGet == false && AIPoint.x >= 0 && AIPoint.y >= 0)
+		{
+			Point success; 
+			success.x = -1; success.y = -1;
+			listener.writePoint(success);
+		}
+		KillTimer(4);
+	}
+	else if (nIDEvent == 5)
+	{
+		if (AIPoint.x == -2 && AIPoint.y == -2)
+		{
+			KillTimer(5);
+			errortimes = 5;
+			return;
+		}
+		if (--errortimes > 0)
+		{
+			return;
+		}
+		errortimes = 5;
+		listener.writePoint(HumanPoint);
 	}
 	CDialogEx::OnTimer(nIDEvent);
 }
@@ -279,6 +331,7 @@ void CMFiveChessDlg::InitChessBoard()
 	ImageShow::GetPath(Progress);
 	CreateFolder(CString(Progress.c_str()));
 	*nownum = 0;
+	ChessBoardPreserve_init(preserve);
 }
 
 void CMFiveChessDlg::OnLButtonUp(UINT nFlags, CPoint point)
@@ -286,21 +339,33 @@ void CMFiveChessDlg::OnLButtonUp(UINT nFlags, CPoint point)
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	if (IsBegin)
 	{
-		Chess_Interface(point, nowcolor);
+		if (!Chess_Interface(point, nowcolor))
+		{
+			return;
+		}
 		nowcolor = !nowcolor;
-		SetTimer(3, 1000 ,NULL);
-		*nownum += 1;
+		SetTimer(3, 1000, NULL);
+		if (IsAImode)
+		{
+			SetTimer(4,100,NULL);
+		}
 	}
 	CDialogEx::OnLButtonUp(nFlags, point);
 }
 
-void CMFiveChessDlg::Chess_Interface(CPoint position,bool color = false)
+bool CMFiveChessDlg::Chess_Interface(CPoint position,bool color = false)
 {
 	LimitPoint(position);
+	Evian::CPoint positionwico(position.x, position.y, color);
+	positionwico = ChessBoardPreserve_add_point(preserve, positionwico, color);
+	if (positionwico.x < 0 || positionwico.y < 0)
+	{
+		return false;
+	}
 	CSize scaledSize((size.Width() - 100)/18/1.2, (size.Height() - 100)/18/1.2); // 缩放尺寸为对话框大小
 	double sizex,sizey;
-	sizex = position.x * (size.Width() - 100) / 18;
-	sizey = position.y * (size.Height() - 100) / 18;
+	sizex = positionwico.x * (size.Width() - 100) / 18;
+	sizey = positionwico.y * (size.Height() - 100) / 18;
 	sizex += 50;
 	sizey += 80;
 	sizex -= scaledSize.cx / 2;
@@ -316,8 +381,11 @@ void CMFiveChessDlg::Chess_Interface(CPoint position,bool color = false)
 	{
 		ImageShow::DisplayImage(scaledSize, position, pDC, blackpath);
 	}
+	*nownum += 1;
 	ProcessImage(GetDC(), size, Progress + "chess.png", *nownum, nowBoardPath);
 	ReleaseDC(pDC);
+	JudgeVictory();
+	return true;
 }
 
 void ProcessImage(CDC* DC, CRect size,std::string path,int nownum,CString& BoardPath) 
@@ -381,4 +449,44 @@ void CMFiveChessDlg::OnSizing(UINT fwSide, LPRECT pRect)
 	CDialogEx::OnSizing(fwSide, pRect);
 
 	// TODO: 在此处添加消息处理程序代码
+}
+
+void CMFiveChessDlg::DestroyBoard()
+{
+	KillTimer(3);
+	IsBegin = false;
+	nowcolor = false;
+	nowtime = 30;
+	Invalidate();
+	listener.stopListeningThread();
+	ChessBoardPreserve_destroy(preserve);
+	Begin_Button.ShowWindow(SW_SHOW);
+	Begin_Button.EnableWindow(true);
+	IsBegin = false;
+}
+
+void CMFiveChessDlg::JudgeVictory()
+{
+	bool black_win = check_win_condition(preserve, true);
+	bool white_win = check_win_condition(preserve, false);
+	if (black_win == true)
+	{
+		AfxMessageBox(_T("Black Win!"));
+	}
+	else if (white_win == true)
+	{
+		AfxMessageBox(_T("White Win!"));
+	}
+	else
+	{
+		return;
+	}
+	DestroyBoard();
+}
+
+void CMFiveChessDlg::OnClose()
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+
+	CDialogEx::OnClose();
 }

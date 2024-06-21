@@ -183,6 +183,7 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ChessBoradPreserve.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Handle.h" />
     <ClInclude Include="ImageShow.h" />
@@ -195,6 +196,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ChessBoradPreserve.cpp" />
     <ClCompile Include="Handle.cpp" />
     <ClCompile Include="ImageShow.cpp" />
     <ClCompile Include="MFile.cpp" />

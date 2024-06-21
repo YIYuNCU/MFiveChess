@@ -40,37 +40,26 @@ bool SharedMemoryListener::initialize()
     return true;
 }
 
-void SharedMemoryListener::listenSharedMemoryChanges() 
+void SharedMemoryListener::listenSharedMemoryChanges(Point& currentPoint)
 {
-    Point currentPoint;
     while (!stopListening) 
     {
         if (receivePoint(currentPoint)) 
         {
             CString message;
-            if (currentPoint.x < 0 || currentPoint.y < 0)
-            {
-                Sleep(100);
-                continue;
-            }
-            else
-            {
-                invalidatePoint();
-            }
             message.Format(L"Received Point: (%d, %d)", currentPoint.x, currentPoint.y);
-            AfxMessageBox(message);
         }
         Sleep(100);  // 每0.1秒监听一次
     }
 }
 
-bool SharedMemoryListener::startListening()
+bool SharedMemoryListener::startListening(Point& currentPoint)
 {
     if (!initialize()) 
     {
         return false;
     }
-    listenerThread = std::thread(&SharedMemoryListener::listenSharedMemoryChanges, this);
+    listenerThread = std::thread(&SharedMemoryListener::listenSharedMemoryChanges, this, std::ref(currentPoint));
     return true;
 }
 
@@ -102,7 +91,18 @@ void SharedMemoryListener::invalidatePoint()
     if (mappedPoint) 
     {
         mappedPoint->x = -1; // 设置为非法值
-        mappedPoint->y = -1; // 设置为非法值
-        
+        mappedPoint->y = -1; // 设置为非法值      
     }
+}
+
+bool SharedMemoryListener::writePoint(const Point& newPoint)
+{
+    std::lock_guard<std::mutex> lock(mtx);
+    if (mappedPoint)
+    {
+        mappedPoint->x = newPoint.x;
+        mappedPoint->y = newPoint.y;
+        return true;
+    }
+    return false;
 }
