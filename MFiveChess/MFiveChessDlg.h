@@ -84,6 +84,8 @@ protected:
 	bool EnableUI_Rep = true;
 	int errortimes = 5;
 	int* nownum = new int;
+	int RepentanceBNum = 3;
+	int RepentanceWNum = 3;
 public:
 	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
 	afx_msg void OnClose();

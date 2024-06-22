@@ -507,6 +507,8 @@ void CMFiveChessDlg::InitChessBoard()
 	CreateFolder(CString(Progress.c_str()));
 	EnableUI_Rep = true;
 	*nownum = 0;
+	RepentanceBNum = 3;
+	RepentanceWNum = 3;
 	if (IsAImode)
 	{
 		Point Err; Err.x = -4; Err.y = -4;
@@ -693,6 +695,8 @@ void CMFiveChessDlg::DestroyBoard()
 	ChessBoardPreserve_destroy(preserve);
 	nowBoardPath = CString("");
 	*nownum = 0;
+	RepentanceBNum = 3;
+	RepentanceWNum = 3;
 	Begin_Button.ShowWindow(SW_SHOW);
 	Begin_Button.EnableWindow(true);
 	UI_Control_AI.ShowWindow(SW_SHOW);
@@ -774,6 +778,28 @@ int CMFiveChessDlg::Repentance()
 	else
 	{
 		return -1;
+	}
+	if (nowcolor)
+	{
+		if (RepentanceBNum-- <= 0)
+		{
+			AfxMessageBox(L"黑棋已无悔棋次数");
+			return -3;
+		}
+		CString temp;
+		temp.Format(L"黑棋当前剩余悔棋次数:%d", RepentanceBNum);
+		AfxMessageBox(temp);
+	}
+	else
+	{
+		if (RepentanceWNum-- <= 0)
+		{
+			AfxMessageBox(L"白棋已无悔棋次数");
+			return -3;
+		}
+		CString temp;
+		temp.Format(L"白棋当前剩余悔棋次数:%d", RepentanceWNum);
+		AfxMessageBox(temp);
 	}
 	nowcolor = !nowcolor;
 	SubName();
