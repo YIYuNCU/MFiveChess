@@ -5,6 +5,7 @@
 #pragma once
 #include "Handle.h"
 #include "ChessBoradPreserve.h"
+#include "MTime.h"
 
 // CMFiveChessDlg 对话框
 class CMFiveChessDlg : public CDialogEx
@@ -44,12 +45,24 @@ protected:
 protected:
 	bool DisplayBoard();
 	void InitChessBoard();
-	bool Chess_Interface(CPoint, bool);
+	bool Chess_Interface(CPoint& position, bool color);
 	CPoint LimitPoint(CPoint& position);
 	void DestroyBoard();
-	void JudgeVictory();
+	bool JudgeVictory();
+	void TimeEvent();
+	void MTimerFunction(int intervalSeconds);
+	void UI_ChangePos(bool color);
+	void UI_ChangeSize();
+	bool UI_Size();
+	void UI_Init();
+	int Repentance();
+public:
+	void SetNowColor(bool Color);
+	bool GetNowColor();
+	void SubName();
 	//自定义变量
 protected:
+	MTime mtime;
 	bool IsBegin = false;
 	CRect size;
 	std::string boardpath = "borad.png";
@@ -59,19 +72,31 @@ protected:
 	std::string dialogpath = "dialog.png";
 	std::string Progress = "Progress\\";
 	bool nowcolor = true;
-	int nowtime = 30;
-	int *nownum = new int;
 	CString nowBoardPath = CString("");
 	ChessBoardPreserve* preserve = new ChessBoardPreserve;
 	bool IsAImode = false;
 	Point AIPoint;
 	Point HumanPoint;
+	Point RepentancePoint;
 	bool EnableSend = false;
 	bool EnableGet = false;
+	bool EnableRepentance = false;
+	bool EnableUI_Rep = true;
 	int errortimes = 5;
+	int* nownum = new int;
 public:
 	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
 	afx_msg void OnClose();
+	CButton UI_Control_AI;
+	CButton UI_Control_Human;
+	CButton UI_Control_NetHum;
+	afx_msg void OnBnClickedAimode();
+	afx_msg void OnBnClickedHuman();
+	afx_msg void OnBnClickedNetworkhuman();
+	CStatic UI_Control_LastTime;
+	CStatic UI_Control_Color;
+	CButton UI_Control_Repentance;
+	afx_msg void OnBnClickedRepentance();
 };
 
 void ProcessImage(CDC* DC, CRect size, std::string path, int nownum, CString& BoardPath);

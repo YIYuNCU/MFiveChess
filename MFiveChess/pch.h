@@ -19,4 +19,6 @@
 #include <iostream>
 #include <stdlib.h> // 为了使用动态内存分配函数
 #include <unordered_map>
+#include <functional>
+#include <chrono>
 #endif //PCH_H

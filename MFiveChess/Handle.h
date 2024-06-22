@@ -1,29 +1,35 @@
 #pragma once
 
-struct Point {
+#include <thread>
+#include <mutex>
+
+struct Point
+{
     int x;
     int y;
 };
 
-class SharedMemoryListener {
-private:
-    HANDLE hMapFile;
-    Point* mappedPoint;
-    std::mutex mtx;
-    std::thread listenerThread;
-    bool stopListening;
-
-    void listenSharedMemoryChanges(Point& currentPoint);
-
+class SharedMemoryListener
+{
 public:
     SharedMemoryListener();
     ~SharedMemoryListener();
 
-    bool initialize();
     bool startListening(Point& currentPoint);
     void stopListeningThread();
+    void invalidatePoint();
+    bool writePoint(const Point& newPoint);
+    void cleanup();
     bool receivePoint(Point& point);
-    void SharedMemoryListener::invalidatePoint();
-    bool SharedMemoryListener::writePoint(const Point& newPoint);
-};
+private:
+    HANDLE hMapFile;
+    Point* mappedPoint;
+    HANDLE hEvent;
+    std::thread listenerThread;
+    std::mutex mtx;
+    bool stopListening;
 
+    bool initialize();
+    void listenSharedMemoryChanges(Point& currentPoint);
+    
+};

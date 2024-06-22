@@ -149,13 +149,30 @@ bool getChessColorAt(const ChessBoardPreserve* board, int x, int y, bool& color)
     }
     return false; // 找不到对应位置的棋子，返回 false
 }
+Evian::CPoint ChessBoardPreserve_remove_last_point(ChessBoardPreserve* board)
+{
+    Evian::CPoint deletedPoint;
 
-Evian::CPoint::CPoint(LONG x0 = -1,LONG y0 = -1,BOOL color0 = false)
+    if (board->num_points == 0)
+    {
+        return Evian::CPoint::ERRPOINT(); // 如果没有点可以删除，返回错误点
+    }
+
+    // 保存被删除的点的坐标
+    deletedPoint = board->points[board->num_points - 1];
+
+    // 减少 num_points，即不再认为最后一个点存在
+    board->num_points--;
+
+    return deletedPoint; // 返回被删除的点的坐标
+}
+Evian::CPoint::CPoint(LONG x0,LONG y0,BOOL color0)
 {
     this->x = x0;
     this->y = y0;
     this->color = color0;
 }
+
 
 Evian::CPoint Evian::CPoint::ERRPOINT()
 {

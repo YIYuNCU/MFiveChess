@@ -1,6 +1,43 @@
 #include "pch.h"
 #include "MTime.h"
 
+MTime::MTime(int hours, int minutes, int seconds)
+{
+    this->hours = hours;
+    this->minutes = minutes;
+    this->seconds = seconds;
+}
+
+void MTime::SetNowTime(int seconds, int minutes, int hours)
+{
+    this->hours = hours;
+    this->minutes = minutes;
+    this->seconds = seconds;
+}
+
+bool MTime::SubSeconds(int seconds)
+{
+    bgn:
+    if (this->seconds > 0)
+    {
+        this->seconds -= seconds;
+        return true;
+    }
+    else if (this->minutes > 0)
+    {
+        this->minutes -= 1;
+        this->seconds += 60;
+        goto bgn;
+    }
+    else if (this->hours > 0)
+    {
+        this->hours -= 1;
+        this->minutes += 60;
+        goto bgn;
+    }
+    return false;
+}
+
 int MTime::GetNowMinutes() const
 {
     return minutes;
