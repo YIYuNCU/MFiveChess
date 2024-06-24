@@ -6,6 +6,7 @@
 #include "Handle.h"
 #include "ChessBoradPreserve.h"
 #include "MTime.h"
+#include "voice.h"
 
 // CMFiveChessDlg 对话框
 class CMFiveChessDlg : public CDialogEx
@@ -71,10 +72,15 @@ protected:
 	SharedMemoryListener listener;
 	std::string dialogpath = "dialog.png";
 	std::string Progress = "Progress\\";
+	std::string PyAI1path = "AI\\PyAI_1.exe";
+	std::string PyAI2path = "AI\\PyAI_2.exe";
+	std::string PyAI3path = "AI\\PyAI_3.exe";
+	std::string PyAI4path = "AI\\PyAI_4.exe";
 	bool nowcolor = true;
 	CString nowBoardPath = CString("");
 	ChessBoardPreserve* preserve = new ChessBoardPreserve;
 	bool IsAImode = false;
+	int AIDifficult = -1;
 	Point AIPoint;
 	Point HumanPoint;
 	Point RepentancePoint;
@@ -86,19 +92,25 @@ protected:
 	int* nownum = new int;
 	int RepentanceBNum = 3;
 	int RepentanceWNum = 3;
+	Voice voice;
+	bool IsVoiceEnd = true;
 public:
 	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
 	afx_msg void OnClose();
-	CButton UI_Control_AI;
+	CButton UI_Control_AIE;
+	CButton UI_Control_AIM;
+	CButton UI_Control_AID;
 	CButton UI_Control_Human;
 	CButton UI_Control_NetHum;
-	afx_msg void OnBnClickedAimode();
+	afx_msg void OnBnClickedAiEmode();
 	afx_msg void OnBnClickedHuman();
 	afx_msg void OnBnClickedNetworkhuman();
 	CStatic UI_Control_LastTime;
 	CStatic UI_Control_Color;
 	CButton UI_Control_Repentance;
 	afx_msg void OnBnClickedRepentance();
+	afx_msg void OnBnClickedAimmode();
+	afx_msg void OnBnClickedAidmode();
 };
 
 void ProcessImage(CDC* DC, CRect size, std::string path, int nownum, CString& BoardPath);

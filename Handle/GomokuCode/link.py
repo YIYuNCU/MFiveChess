@@ -4,6 +4,7 @@ import time
 import threading
 from game import Gomoku
 import sys
+from m_UI import create_ui
 
 ISMAI = False
 
@@ -22,6 +23,8 @@ enable_repentance = False
 obj = Gomoku()
 # 定义全局锁对象
 write_lock = threading.Lock()
+#定义UI对象
+root, add_message = create_ui()
 
 # 判断是否允许读取或写入
 def judging_read(x , y):
@@ -31,7 +34,7 @@ def judging_read(x , y):
         write_point_to_shared_memory(-2, -2)
 def judging_win(x , y):
     if x == -1 and y == 0:
-        print(f"游戏结束")
+        add_message("游戏结束")
         check_and_close_shared_memory()
         return True
     else:
@@ -45,14 +48,14 @@ def judging_repentance(x , y):
         enable_get = False
         enable_send = False
         write_point_to_shared_memory(-2, 1)
-        print(f"等待悔棋点")
+        add_message("等待悔棋点")
         return False
     elif x == -1 and y == 2 and not enable_repentance:
         enable_repentance = True
         enable_get = False
         enable_send = False
         write_point_to_shared_memory(-2, 3)
-        print(f"等待悔棋点")
+        add_message("等待悔棋点")
         return True
 
     return False  # 如果以上条件都不满足，则返回 False
@@ -75,15 +78,16 @@ def open_shared_memory():
         # 创建共享内存对象
         shm = mmap.mmap(-1, ctypes.sizeof(Point), "Local\\MFiveChessMemory")
         write_point_to_shared_memory(-2, -4)
+        add_message("已打开共享内存")
         return True
     except Exception as e:
-        print(f"Error opening shared memory: {e}")
+        add_message(f"打开共享内存错误: {str(e)}")
         return False
 
 # 写入共享内存
 def write_point_to_shared_memory(x, y):
     if shm is None:
-        print("Shared memory not opened.")
+        add_message("未打开共享内存")
         return False
     
     try:
@@ -95,13 +99,13 @@ def write_point_to_shared_memory(x, y):
             return True
     
     except Exception as e:
-        print(f"Error writing to shared memory: {e}")
+        add_message(f"写入共享内存错误: {str(e)}")
         return False
 
 # 读取共享内存内容
 def read_point_from_shared_memory():
     if shm is None:
-        print("Shared memory not opened.")
+        add_message("共享内存未打开")
         return None, None
     
     try:
@@ -109,7 +113,7 @@ def read_point_from_shared_memory():
         return point.x, point.y
     
     except Exception as e:
-        print(f"Error reading from shared memory: {e}")
+        add_message(f"读取共享内存错误: {str(e)}")
         return None, None
 
 # 关闭共享内存
@@ -118,7 +122,7 @@ def close_shared_memory():
     if shm:
         shm.close()
         shm = None
-        print("Shared memory closed.")
+        add_message("已关闭共享内存")
 
 # 定义一个线程类，用于执行共享内存监听任务
 class SharedMemoryListener(threading.Thread):
@@ -133,7 +137,7 @@ class SharedMemoryListener(threading.Thread):
         while True:
             x, y = read_point_from_shared_memory()  # 调用共享内存读取函数
             if judging_err(x , y) == True:
-                print("出现错误")
+                add_message("出现错误")
                 close_shared_memory()
                 sys.exit(1)
             if x == -2:
@@ -151,7 +155,7 @@ class SharedMemoryListener(threading.Thread):
             y0 = y
             if enable_repentance and x0 > 0 and y0 > 0:
                 obj.delete_1step(x0 , y0)
-                print(f"已删除({x0},{y0})")
+                add_message(f"撤回:({x0},{y0})")
                 if rep == False and enable_repentance:
                     write_point_to_shared_memory(-2, 2)
                     enable_repentance = False
@@ -170,12 +174,15 @@ class SharedMemoryListener(threading.Thread):
                 else:
                     obj.move_1step(True, x, y)
                 write_point_to_shared_memory(-2, -1)
+                add_message(f"你:({x0},{y0})")
                 enable_get = False
                 time.sleep(0.5)
                 if ISMAI:
                     x , y = mai.ai_move()
                 else:
+                    add_message("AI:思考中")
                     x, y = obj.ai_play_1step_py_python()
+                    add_message(f"AI:({x},{y})")
                 write_point_to_shared_memory(x, y)
                 count = 5
                 a = -9
@@ -195,12 +202,23 @@ def check_and_close_shared_memory():
         try:
             shm.close()
             shm = None
-            print("Shared memory closed.")
+            add_message("已关闭共享内存")
             return True
         except Exception as e:
-            print(f"Error closing shared memory: {e}")
+            add_message(f"关闭共享内存错误: {str(e)}")
             return False
     else:
-        print("Shared memory not opened.")
+        add_message("共享内存未打开")
         return False
+def main():
+    if not(open_shared_memory()):
+        sys.exit(1)
+    # 创建并启动共享内存监听线程
+    listener_thread = SharedMemoryListener()
+    listener_thread.start()
+    root.mainloop()
+    '''send_point_to_shared_memory()'''
+
+if __name__ == '__main__':
+    main()
 

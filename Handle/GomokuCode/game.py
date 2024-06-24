@@ -12,7 +12,7 @@ class Gomoku:
     def __init__(self):
         self.g_map = [[0 for y in range(19)] for x in range(19)]  # 当前的棋盘
         self.cur_step = 0  # 步数
-        self.max_search_steps = 3  # 最远搜索3回合之后
+        self.max_search_steps = 4  # 最远搜索3回合之后
 
     def move_1step(self, input_by_window=False, pos_x=None, pos_y=None):
         """
@@ -25,7 +25,7 @@ class Gomoku:
             if not input_by_window:
                 pos_x = int(input('x: '))  # 接受玩家的输入人
                 pos_y = int(input('y: '))
-            print(f"人下棋点:({pos_x},{pos_y})")
+            #print(f"人下棋点:({pos_x},{pos_y})")
             if 0 <= pos_x <= 18 and 0 <= pos_y <= 18:  # 判断这个格子能否落子
                 if self.g_map[pos_x][pos_y] == 0:
                     self.g_map[pos_x][pos_y] = 1
@@ -39,7 +39,7 @@ class Gomoku:
         删除落子
         
         """
-        print(f"人下棋点:({pos_x},{pos_y})")
+        #print(f"人下棋点:({pos_x},{pos_y})")
         if 0 <= pos_x <= 18 and 0 <= pos_y <= 18:  # 判断这个格子能否落子
             if self.g_map[pos_x][pos_y] != 0:
                 self.g_map[pos_x][pos_y] = 0
@@ -129,7 +129,7 @@ class Gomoku:
 
     def ai_play_1step_by_cpp(self):
         # ai = AI1Step(self, self.cur_step, True)  # AI判断下一步执行什么操作
-        print(f"AI思考中")
+        #print(f"AI思考中")
         st = time.time()
         mapstring = list()
         for x in range(19):
@@ -140,14 +140,14 @@ class Gomoku:
         except ValueError:
             raise ValueError('AI程序计算出来的数值不正确')
         ed = time.time()
-        print('生成了%d个节点，用时%.4f' % (node_len, ed - st))
+        #print('生成了%d个节点，用时%.4f' % (node_len, ed - st))
         self.g_map[ai_ope[0]][ai_ope[1]] = 2
         self.cur_step += 1
-        print(f"AI:({ai_ope[0]},{ai_ope[1]})")
+        #print(f"AI:({ai_ope[0]},{ai_ope[1]})")
         return ai_ope[0] , ai_ope[1]
 
     def ai_play_1step_py_python(self):
-        print(f"AI思考中")
+        #print(f"AI思考中")
         ai = AI1Step(self, self.cur_step, True)  # AI判断下一步执行什么操作
         st = time.time()
         ai.search(0, [set(), set()], self.max_search_steps)  # 最远看2回合之后
@@ -158,7 +158,7 @@ class Gomoku:
         ai_ope = ai.method_tree[ai.next_node_dx_list[0]].ope
         if self.g_map[ai_ope[0]][ai_ope[1]] != 0:
             raise ValueError('self.game_map[ai_ope[0]][ai_ope[1]] = %d' % self.g_map[ai_ope[0]][ai_ope[1]])
-        print(f"AI:({ai_ope[0]},{ai_ope[1]})")
+        #print(f"AI:({ai_ope[0]},{ai_ope[1]})")
         self.g_map[ai_ope[0]][ai_ope[1]] = 2
         self.cur_step += 1
         return ai_ope[0] , ai_ope[1]

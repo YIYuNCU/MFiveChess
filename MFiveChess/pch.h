@@ -8,6 +8,8 @@
 #define PCH_H
 
 // 添加要在此处预编译的标头
+#define WIN32_LEAN_AND_MEAN  // 在包含 Windows.h 之前定义此宏可以减少包含的头文件数量
+
 #include "framework.h"
 #include <string>
 #include <vector>
@@ -21,4 +23,5 @@
 #include <unordered_map>
 #include <functional>
 #include <chrono>
+#include <mmsystem.h>
 #endif //PCH_H

@@ -67,7 +67,9 @@ void CMFiveChessDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_BUTTON1, Begin_Button);
-	DDX_Control(pDX, IDC_AIMode, UI_Control_AI);
+	DDX_Control(pDX, IDC_AIEMode, UI_Control_AIE);
+	DDX_Control(pDX, IDC_AIMMode, UI_Control_AIM);
+	DDX_Control(pDX, IDC_AIDMode, UI_Control_AID);
 	DDX_Control(pDX, IDC_Human, UI_Control_Human);
 	DDX_Control(pDX, IDC_NetWorkHuman, UI_Control_NetHum);
 	DDX_Control(pDX, IDC_LastTime, UI_Control_LastTime);
@@ -86,10 +88,12 @@ BEGIN_MESSAGE_MAP(CMFiveChessDlg, CDialogEx)
 	ON_WM_LBUTTONUP()
 	ON_WM_MOVE()
 	ON_WM_SIZING()
-	ON_BN_CLICKED(IDC_AIMode, &CMFiveChessDlg::OnBnClickedAimode)
+	ON_BN_CLICKED(IDC_AIEMode, &CMFiveChessDlg::OnBnClickedAiEmode)
 	ON_BN_CLICKED(IDC_Human, &CMFiveChessDlg::OnBnClickedHuman)
 	ON_BN_CLICKED(IDC_NetWorkHuman, &CMFiveChessDlg::OnBnClickedNetworkhuman)
 	ON_BN_CLICKED(IDC_Repentance, &CMFiveChessDlg::OnBnClickedRepentance)
+	ON_BN_CLICKED(IDC_AIMMode, &CMFiveChessDlg::OnBnClickedAimmode)
+	ON_BN_CLICKED(IDC_AIDMode, &CMFiveChessDlg::OnBnClickedAidmode)
 END_MESSAGE_MAP()
 
 
@@ -203,18 +207,35 @@ void CMFiveChessDlg::OnBnClickedButton1()
 	{
 		return;
 	}
-	if (IsAImode)
+	if (!IsVoiceEnd)
 	{
-		if (!listener.startListening(AIPoint))
-		{
-			return;
-		}
-		SetTimer(4, 100, NULL);
+		return;
 	}
 	UI_Init();
 	if (!DisplayBoard())
 	{
 		return;
+	}
+	if (IsAImode)
+	{
+		IsBegin = false;
+		if (AIDifficult == 0)
+		{
+			RunExternalProcess(CString(PyAI1path.c_str()));
+		}
+		else if (AIDifficult == 1)
+		{
+			RunExternalProcess(CString(PyAI2path.c_str()));
+		}
+		else if (AIDifficult == 2)
+		{
+			RunExternalProcess(CString(PyAI3path.c_str()));
+		}
+		else if (AIDifficult == 3)
+		{
+			RunExternalProcess(CString(PyAI4path.c_str()));
+		}
+		SetTimer(6, 100, NULL);
 	}
 }
 
@@ -225,8 +246,12 @@ void CMFiveChessDlg::UI_Init()
 		IsBegin = true;
 		Begin_Button.ShowWindow(SW_HIDE);
 		Begin_Button.EnableWindow(false);
-		UI_Control_AI.ShowWindow(SW_HIDE);
-		UI_Control_AI.EnableWindow(false);
+		UI_Control_AIE.ShowWindow(SW_HIDE);
+		UI_Control_AIE.EnableWindow(false);
+		UI_Control_AID.ShowWindow(SW_HIDE);
+		UI_Control_AID.EnableWindow(false);
+		UI_Control_AIM.ShowWindow(SW_HIDE);
+		UI_Control_AIM.EnableWindow(false);
 		UI_Control_Human.ShowWindow(SW_HIDE);
 		UI_Control_Human.EnableWindow(false);
 		UI_Control_NetHum.ShowWindow(SW_HIDE);
@@ -271,35 +296,38 @@ bool CMFiveChessDlg::UI_Size()
 
 void CMFiveChessDlg::UI_ChangePos(bool color)
 {
-	GetClientRect(&size);
-	CRect LastTime;
-	UI_Control_LastTime.GetClientRect(&LastTime);
-	CRect Color;
-	UI_Control_Color.GetClientRect(&Color);
-	CSize Chess;
-	Chess.cx = Color.Height() ;
-	Chess.cy = Color.Height() ;
-	CRect Repentance;
-	UI_Control_Repentance.GetClientRect(&Repentance);
-	// 计算控件的水平居中位置
-	int nCenterX = (size.Width() - LastTime.Width()) / 2;
-	int nCenterY = size.top; // 或者根据需要调整垂直位置
-	int ColorLeft = size.Width() / 4 - Color.Width() / 2; // 四分之一处的水平位置
-	int ColorTop = size.top; // 顶部边距
-	int RepetanceLeft = size.Width() / 4 * 3- Repentance.Width() / 2;
-	if (color)
+	if (IsBegin)
 	{
-		ImageShow::DisplayImage(Chess, CPoint(size.Width() / 4 + LastTime.Width() / 2 + Chess.cx * 2, ColorTop), GetDC(), blackpath);
+		GetClientRect(&size);
+		CRect LastTime;
+		UI_Control_LastTime.GetClientRect(&LastTime);
+		CRect Color;
+		UI_Control_Color.GetClientRect(&Color);
+		CSize Chess;
+		Chess.cx = Color.Height();
+		Chess.cy = Color.Height();
+		CRect Repentance;
+		UI_Control_Repentance.GetClientRect(&Repentance);
+		// 计算控件的水平居中位置
+		int nCenterX = (size.Width() - LastTime.Width()) / 2;
+		int nCenterY = size.top; // 或者根据需要调整垂直位置
+		int ColorLeft = size.Width() / 4 - Color.Width() / 2; // 四分之一处的水平位置
+		int ColorTop = size.top; // 顶部边距
+		int RepetanceLeft = size.Width() / 4 * 3 - Repentance.Width() / 2;
+		if (color)
+		{
+			ImageShow::DisplayImage(Chess, CPoint(size.Width() / 4 + LastTime.Width() / 2 + Chess.cx * 2, ColorTop), GetDC(), blackpath);
+		}
+		else
+		{
+			ImageShow::DisplayImage(Chess, CPoint(size.Width() / 4 + LastTime.Width() / 2 + Chess.cx * 2, ColorTop), GetDC(), whitepath);
+		}
+
+		// 设置控件的位置
+		UI_Control_LastTime.SetWindowPos(nullptr, nCenterX, nCenterY, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+		UI_Control_Color.SetWindowPos(nullptr, ColorLeft, ColorTop, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+		UI_Control_Repentance.SetWindowPos(nullptr, RepetanceLeft, ColorTop, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 	}
-	else
-	{
-		ImageShow::DisplayImage(Chess, CPoint(size.Width() / 4 + LastTime.Width() / 2 + Chess.cx * 2, ColorTop), GetDC(), whitepath);
-	}
-	
-	// 设置控件的位置
-	UI_Control_LastTime.SetWindowPos(nullptr, nCenterX, nCenterY, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
-	UI_Control_Color.SetWindowPos(nullptr, ColorLeft, ColorTop, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
-	UI_Control_Repentance.SetWindowPos(nullptr, RepetanceLeft, ColorTop, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 }
 void CMFiveChessDlg::UI_ChangeSize()
 {
@@ -453,7 +481,7 @@ void CMFiveChessDlg::OnTimer(UINT_PTR nIDEvent)
 		// Adjusted logic based on new SharedMemoryListener functionality
 		if (listener.receivePoint(AIPoint))
 		{
-			if(AIPoint.x == -2 && AIPoint.y == -1)
+			if (AIPoint.x == -2 && AIPoint.y == -1)
 			{
 				KillTimer(5);
 				errortimes = 5;
@@ -478,6 +506,25 @@ void CMFiveChessDlg::OnTimer(UINT_PTR nIDEvent)
 			}
 			listener.writePoint(HumanPoint);
 		}
+	}
+	else if (nIDEvent == 6)
+	{
+		if (!listener.startListening(AIPoint))
+		{
+			return;
+		}
+		Point ERR;
+		ERR.x = -4; ERR.y = -4;
+		listener.writePoint(ERR);
+		KillTimer(6);
+		SetTimer(4, 100, NULL);
+		IsBegin = true;
+	}
+	else if (nIDEvent == 7)
+	{
+		KillTimer(7);
+		voice.EndVoice();
+		IsVoiceEnd = true;
 	}
 
 	CDialogEx::OnTimer(nIDEvent);
@@ -514,6 +561,10 @@ void CMFiveChessDlg::InitChessBoard()
 		Point Err; Err.x = -4; Err.y = -4;
 		listener.writePoint(Err);
 	}
+	ImageShow::GetPath(PyAI1path);
+	ImageShow::GetPath(PyAI2path);
+	ImageShow::GetPath(PyAI3path);
+	ImageShow::GetPath(PyAI4path);
 	ChessBoardPreserve_init(preserve);
 }
 
@@ -552,6 +603,10 @@ void CMFiveChessDlg::OnLButtonUp(UINT nFlags, CPoint point)
 			if (EnableSend)
 			{
 				if (!Chess_Interface(point, nowcolor))
+				{
+					goto end;
+				}
+				if (!IsBegin)
 				{
 					goto end;
 				}
@@ -610,10 +665,12 @@ bool CMFiveChessDlg::Chess_Interface(CPoint& position,bool color = false)
 	if (!color)
 	{
 		ImageShow::DisplayImage(scaledSize, position, pDC, whitepath);
+		voice.PlayWhite();
 	}
 	else
 	{
 		ImageShow::DisplayImage(scaledSize, position, pDC, blackpath);
+		voice.PlayBlack();
 	}
 	*nownum += 1;
 	ProcessImage(GetDC(), size, Progress + "chess.png", *nownum, nowBoardPath);
@@ -688,8 +745,7 @@ void CMFiveChessDlg::OnSizing(UINT fwSide, LPRECT pRect)
 void CMFiveChessDlg::DestroyBoard()
 {
 	KillTimer(3);
-	IsBegin = false;
-	nowcolor = false;
+	nowcolor = true;
 	Invalidate();
 	listener.stopListeningThread();
 	ChessBoardPreserve_destroy(preserve);
@@ -699,29 +755,39 @@ void CMFiveChessDlg::DestroyBoard()
 	RepentanceWNum = 3;
 	Begin_Button.ShowWindow(SW_SHOW);
 	Begin_Button.EnableWindow(true);
-	UI_Control_AI.ShowWindow(SW_SHOW);
-	UI_Control_AI.EnableWindow(true);
+	UI_Control_AIE.ShowWindow(SW_SHOW);
+	UI_Control_AIE.EnableWindow(true);
+	UI_Control_AIM.ShowWindow(SW_SHOW);
+	UI_Control_AIM.EnableWindow(true);
+	UI_Control_AID.ShowWindow(SW_SHOW);
+	UI_Control_AID.EnableWindow(true);
 	UI_Control_Human.ShowWindow(SW_SHOW);
 	UI_Control_Human.EnableWindow(true);
 	UI_Control_NetHum.ShowWindow(SW_SHOW);
 	UI_Control_NetHum.EnableWindow(true);
 	UI_Control_LastTime.ShowWindow(SW_HIDE);
 	UI_Control_LastTime.EnableWindow(false);
-	UI_Control_Color.ShowWindow(SW_HIDE);
-	UI_Control_Color.EnableWindow(false);
 	UI_Control_Repentance.ShowWindow(SW_HIDE);
 	UI_Control_Repentance.EnableWindow(false);
+	CheckDlgButton(IDC_AIMode, BST_UNCHECKED);
+	CheckDlgButton(IDC_NetWorkHuman, BST_UNCHECKED);
+	CheckDlgButton(IDC_Human, BST_UNCHECKED);
 	Invalidate();
 	if (IsAImode)
 	{
+		AIDifficult = -1;
+		TerminateProcess();
 		HumanPoint.x = -1; HumanPoint.y = 0;
-		IsAImode = false;
 		EnableSend = false;
 		EnableGet = false;
 		EnableRepentance = false;
 		EnableUI_Rep = true;
-		listener.writePoint(HumanPoint);
+		Point Err; Err.x = -4; Err.y = -4;
+		listener.writePoint(Err);
 	}
+	UI_Control_Color.ShowWindow(SW_HIDE);
+	UI_Control_Color.EnableWindow(false);
+	IsBegin = false;
 }
 void CMFiveChessDlg::SubName()
 {
@@ -771,15 +837,16 @@ int CMFiveChessDlg::Repentance()
 		}
 		return -2;
 	}
-	if (*nownum > 0)
+	if (*nownum > 1)
 	{
-		*nownum -= 1;
+		*nownum -= 2;
 	}
 	else
 	{
+		AfxMessageBox(L"没有可以悔的棋");
 		return -1;
 	}
-	if (nowcolor)
+	if ((nowcolor && !IsAImode) || (nowcolor && IsAImode))
 	{
 		if (RepentanceBNum-- <= 0)
 		{
@@ -788,7 +855,7 @@ int CMFiveChessDlg::Repentance()
 		}
 		CString temp;
 		temp.Format(L"黑棋当前剩余悔棋次数:%d", RepentanceBNum);
-		AfxMessageBox(temp);
+		MessageBox(temp);
 	}
 	else
 	{
@@ -799,31 +866,21 @@ int CMFiveChessDlg::Repentance()
 		}
 		CString temp;
 		temp.Format(L"白棋当前剩余悔棋次数:%d", RepentanceWNum);
-		AfxMessageBox(temp);
+		MessageBox(temp);
 	}
-	nowcolor = !nowcolor;
 	SubName();
 	UI_ChangeSize();
 	Evian::CPoint LastPoint = ChessBoardPreserve_remove_last_point(preserve);
-	RepentancePoint.x = -1;
-	RepentancePoint.y = 1;
-	HumanPoint.x = LastPoint.x; HumanPoint.y = LastPoint.y;
 	if(LastPoint == Evian::CPoint::ERRPOINT())
 	{
 		return 2;
 	}
 	if (IsAImode)
 	{
+		RepentancePoint.x = -1;
+		RepentancePoint.y = 1;
+		HumanPoint.x = LastPoint.x; HumanPoint.y = LastPoint.y;
 		EnableRepentance = true;
-		if (*nownum > 0)
-		{
-			*nownum -= 1;
-		}
-		else
-		{
-			return -1;
-		}
-		nowcolor = !nowcolor;
 		SubName();
 		UI_ChangeSize();
 		Point rep; rep.x = -1; rep.y = 1;
@@ -833,55 +890,79 @@ int CMFiveChessDlg::Repentance()
 		EnableUI_Rep = false;
 		SetTimer(5, 200, NULL);
 	}
+	else
+	{
+		SubName();
+		LastPoint = ChessBoardPreserve_remove_last_point(preserve);
+		UI_ChangeSize();
+	}
 	return 0;
 }
 bool CMFiveChessDlg::JudgeVictory()
 {
 	bool black_win = check_win_condition(preserve, true);
-	bool white_win = check_win_condition(preserve, false);
-	if (black_win == true)
-	{
-		AfxMessageBox(L"Black Win!");
-	}
-	else if (white_win == true)
-	{
-		AfxMessageBox(_T("White Win!"));
-	}
-	else
+	bool white_win = check_win_condition(preserve, false);	
+	if(!black_win && !white_win)
 	{
 		return false;
 	}
+	DestroyBoard();
 	if (IsAImode)
 	{
 		Point fin; fin.x = -1; fin.y = 0;
 		listener.writePoint(fin);
+		while (IsBegin) Sleep(300);
+		if (black_win)
+		{
+			voice.PlayAI();
+		}
+		else if (white_win)
+		{
+			voice.PlayHuman();
+		}
+		SetTimer(7, 3500, NULL);
+		IsVoiceEnd = false;
+		IsAImode = false;
 	}
-	DestroyBoard();
+	if (black_win == true)
+	{
+		MessageBox(L"Black Win!");
+	}
+	else if (white_win == true)
+	{
+		MessageBox(_T("White Win!"));
+	}
 	return true;
 }
 
 void CMFiveChessDlg::OnClose()
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	TerminateProcess();
 	listener.cleanup();
 	CDialogEx::OnClose();
 }
 
 
-void CMFiveChessDlg::OnBnClickedAimode()
+void CMFiveChessDlg::OnBnClickedAiEmode()
 {
 	// TODO: 在此添加控件通知处理程序代码
+	CheckDlgButton(IDC_AIMMode, BST_UNCHECKED);
+	CheckDlgButton(IDC_AIDMode, BST_UNCHECKED);
 	CheckDlgButton(IDC_Human, BST_UNCHECKED);
 	CheckDlgButton(IDC_NetWorkHuman, BST_UNCHECKED);
 	IsAImode = true;
 	EnableSend = true;
+	AIDifficult = 0;
 }
 
 
 void CMFiveChessDlg::OnBnClickedHuman()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	CheckDlgButton(IDC_AIMode, BST_UNCHECKED);
+	CheckDlgButton(IDC_AIEMode, BST_UNCHECKED);
+	CheckDlgButton(IDC_AIMMode, BST_UNCHECKED);
+	CheckDlgButton(IDC_AIDMode, BST_UNCHECKED);
 	CheckDlgButton(IDC_NetWorkHuman, BST_UNCHECKED);
 	IsAImode = false;
 	EnableSend = false;
@@ -891,7 +972,9 @@ void CMFiveChessDlg::OnBnClickedHuman()
 void CMFiveChessDlg::OnBnClickedNetworkhuman()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	CheckDlgButton(IDC_AIMode, BST_UNCHECKED);
+	CheckDlgButton(IDC_AIEMode, BST_UNCHECKED);
+	CheckDlgButton(IDC_AIMMode, BST_UNCHECKED);
+	CheckDlgButton(IDC_AIDMode, BST_UNCHECKED);
 	CheckDlgButton(IDC_Human, BST_UNCHECKED);
 }
 
@@ -900,4 +983,30 @@ void CMFiveChessDlg::OnBnClickedRepentance()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	Repentance();
+}
+
+
+void CMFiveChessDlg::OnBnClickedAimmode()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CheckDlgButton(IDC_AIEMode, BST_UNCHECKED);
+	CheckDlgButton(IDC_AIDMode, BST_UNCHECKED);
+	CheckDlgButton(IDC_Human, BST_UNCHECKED);
+	CheckDlgButton(IDC_NetWorkHuman, BST_UNCHECKED);
+	IsAImode = true;
+	EnableSend = true;
+	AIDifficult = 1;
+}
+
+
+void CMFiveChessDlg::OnBnClickedAidmode()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CheckDlgButton(IDC_AIEMode, BST_UNCHECKED);
+	CheckDlgButton(IDC_AIMMode, BST_UNCHECKED);
+	CheckDlgButton(IDC_Human, BST_UNCHECKED);
+	CheckDlgButton(IDC_NetWorkHuman, BST_UNCHECKED);
+	IsAImode = true;
+	EnableSend = true;
+	AIDifficult = 2;
 }

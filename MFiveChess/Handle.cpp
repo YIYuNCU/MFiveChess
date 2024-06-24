@@ -15,7 +15,6 @@ bool SharedMemoryListener::initialize()
     hMapFile = OpenFileMapping(FILE_MAP_READ | FILE_MAP_WRITE, FALSE, L"Local\\MFiveChessMemory");
     if (hMapFile == nullptr)
     {
-        AfxMessageBox(L"打开共享内存失败!");
         return false;
     }
 

@@ -3,7 +3,6 @@ import copy
 import time
 
 
-
 class Node:
     """AI搜索时的一个节点"""
 
@@ -17,6 +16,7 @@ class Node:
         :param beta: 这个节点初始的beta值
         :param force_score: 是否必须算出一个分数
         :param player_first: 是否玩家先出
+        :param IfCut: 是否剪枝
         """
         self.game = game
         self.ope = ope
@@ -354,10 +354,6 @@ class AI1Step:
             self.child_node_dx_list.append([])
             self.child_node_dx_list[cur_node_dx].append(node_new_dx)  # 将这个新节点记录为当前节点的子节点
             self.next_node_dx_list.append(-1)  # 记录每个节点下一步的动作
-            # ope_hist_new = copy.deepcopy(ope_hist)  # 记录假象的历史状态列表
-            # ope_hist_new[0].add(cell[0])
-            # ope_hist_new[1].add(cell[1])
-            # self.ope_hist_list.append(ope_hist_new)
             if len(self.method_tree) >= self.max_node_num:  # 为保护内存，搜索树的节点数目不能太多
                 raise ValueError('Method Tree太大了')
 
