@@ -16,7 +16,7 @@ BOOL ImageShow::DisplayImage(CSize scaledSize, CPoint position, CDC* pDC, std::s
     CDC memDC;
     memDC.CreateCompatibleDC(pDC); // 创建与目标DC兼容的内存DC
 
-    // 创建带有Alpha通道的位图
+    // 创建带有Alpha通道的位图，用于保存透明部分
     BITMAPINFO bmi;
     memset(&bmi, 0, sizeof(BITMAPINFO));
     bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
@@ -102,6 +102,7 @@ void ImageShow::DrawGrid(CDC* pDC)
     // 恢复原来的画笔
     pDC->SelectObject(pOldPen);
 }
+
 void ImageShow::SaveBoardAsPNG(std::string& filename)
 {
     std::string programPath = GetProgramPath();
@@ -141,74 +142,6 @@ std::string ImageShow::GetProgramPath()
 void ImageShow::GetPath(std::string& temp)
 {
     temp = ImageShow::GetProgramPath() + "\\" + temp;
-}
-
-void ImageShow::ResizeAndSaveImage(const std::string& imagePath, int paneSize)
-{
-    CImage image;
-    if (FAILED(image.Load(CString(imagePath.c_str()))))
-    {
-        TRACE(_T("Failed to load image\n"));
-        return; // 加载失败，可以添加错误处理代码
-    }
-
-    int imageWidth = image.GetWidth();
-    int imageHeight = image.GetHeight();
-
-    double cellSize = (double)paneSize;
-    double newWidth = cellSize;
-    double newHeight = cellSize;
-
-    // 创建一个新的 CImage 对象来存储调整大小后的图像
-    CImage resizedImage;
-    if (!resizedImage.Create(static_cast<int>(10 * newWidth), static_cast<int>(10 * newHeight), image.GetBPP(), image.GetBPP() == 32 ? CImage::createAlphaChannel : 0))
-    {
-        TRACE(_T("Failed to create resized image!\n"));
-        return; // 创建失败，可以添加错误处理代码
-    }
-
-    // 使用 StretchBlt 将原始图像绘制到调整大小后的图像中
-    CDC dcResized;
-    if (dcResized.CreateCompatibleDC(NULL))
-    {
-        dcResized.SelectObject(resizedImage);
-
-        CDC dcImage;
-        if (dcImage.Attach(image.GetDC()))
-        {
-            dcResized.StretchBlt(0, 0, static_cast<int>(10 * newWidth), static_cast<int>(10 * newHeight),
-                &dcImage, 0, 0, imageWidth, imageHeight, SRCCOPY);
-            dcImage.Detach();
-            image.ReleaseDC();
-        }
-        else
-        {
-            TRACE(_T("Failed to attach DC for image!\n"));
-            resizedImage.Destroy();
-            return;
-        }
-    }
-    else
-    {
-        TRACE(_T("Failed to create compatible DC!\n"));
-        resizedImage.Destroy();
-        return;
-    }
-
-    // 构建新的文件名，加上 _temp 后缀
-    CString strImagePath(imagePath.c_str());
-    int dotIndex = strImagePath.ReverseFind('.');
-    CString strNewImagePath = strImagePath.Left(dotIndex) + _T("_temp") + strImagePath.Mid(dotIndex);
-
-    // 保存调整大小后的图像到新路径
-    if (FAILED(resizedImage.Save(strNewImagePath)))
-    {
-        TRACE(_T("Failed to save resized image!\n"));
-        return; // 保存失败，可以添加错误处理代码
-    }
-
-    // 提示保存成功
-    TRACE(_T("Image resized and saved successfully: %s\n"), strNewImagePath);
 }
 
 CString ImageShow::OnCaptureImage(CDC* pDC,CSize size,CPoint position,std::string savepath,int nownum)

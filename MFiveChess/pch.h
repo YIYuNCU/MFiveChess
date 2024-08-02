@@ -24,4 +24,6 @@
 #include <functional>
 #include <chrono>
 #include <mmsystem.h>
+#include <sstream>
+#include <fstream>
 #endif //PCH_H

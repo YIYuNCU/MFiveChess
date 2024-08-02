@@ -106,7 +106,7 @@ bool check_win_condition(const ChessBoardPreserve* board, bool color)
     return false; // 未找到五子连珠，返回 false
 }
 
-Evian::CPoint ChessBoardPreserve_add_point(ChessBoardPreserve* board, Evian::CPoint point, bool color)
+Evian::CPoint ChessBoardPreserve_add_point(ChessBoardPreserve* board, Evian::CPoint point)
 {
     // 检查新的点是否已经存在
     for (int i = 0; i < board->num_points; ++i)
@@ -132,7 +132,7 @@ Evian::CPoint ChessBoardPreserve_add_point(ChessBoardPreserve* board, Evian::CPo
 
     // 将新的点添加到数组中
     board->points[board->num_points] = point;
-    board->points[board->num_points].color = color;
+
     board->num_points++;
     return point; // 成功添加
 }
@@ -149,6 +149,20 @@ bool getChessColorAt(const ChessBoardPreserve* board, int x, int y, bool& color)
     }
     return false; // 找不到对应位置的棋子，返回 false
 }
+
+bool getChessAt(const ChessBoardPreserve* board, int x, int y)
+{
+    int i = 0;
+    for (i = 0; i < board->num_points; i++)
+    {
+        if (board->points[i].x == x && board->points[i].y == y)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 Evian::CPoint ChessBoardPreserve_remove_last_point(ChessBoardPreserve* board)
 {
     Evian::CPoint deletedPoint;
@@ -173,8 +187,19 @@ Evian::CPoint::CPoint(LONG x0,LONG y0,BOOL color0)
     this->color = color0;
 }
 
+Evian::CPoint::CPoint(::CPoint point, BOOL color0)
+{
+    this->x = point.x;
+    this->y = point.y;
+    this->color = color0;
+}
 
 Evian::CPoint Evian::CPoint::ERRPOINT()
 {
     return Evian::CPoint();
+}
+
+::CPoint Evian::CPoint::GetStdCPoint(Evian::CPoint point)
+{
+     return ::CPoint(point.x,point.y);
 }

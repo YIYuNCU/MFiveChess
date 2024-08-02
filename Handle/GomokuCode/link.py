@@ -5,12 +5,6 @@ import threading
 from game import Gomoku
 import sys
 from m_UI import create_ui
-
-ISMAI = False
-
-if ISMAI:
-    from m_ai import FiveChessAI
-    mai = FiveChessAI()
 class Point(ctypes.Structure):
     _fields_ = [("x", ctypes.c_int),
                 ("y", ctypes.c_int)]
@@ -20,6 +14,8 @@ shm = None
 enable_send = False
 enable_get = True
 enable_repentance = False
+OnlyAdd = False
+color = False
 obj = Gomoku()
 # 定义全局锁对象
 write_lock = threading.Lock()
@@ -123,14 +119,17 @@ def close_shared_memory():
         shm.close()
         shm = None
         add_message("已关闭共享内存")
-
+def Only_Add(x , y):
+    global OnlyAdd
+    if x == -1 and y == 10:
+        OnlyAdd = True
 # 定义一个线程类，用于执行共享内存监听任务
 class SharedMemoryListener(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.daemon = True  # 设置线程为守护线程，使得主程序退出时，线程也会退出
     def run(self):
-        global enable_get, enable_send , enable_repentance
+        global enable_get, enable_send , enable_repentance , color
         x0 = -2
         y0 = -4
         rep = False
@@ -143,6 +142,7 @@ class SharedMemoryListener(threading.Thread):
             if x == -2:
                 time.sleep(0.11)
                 continue
+            Only_Add(x,y)
             judging_read(x ,y)
             judging_write(x ,y)
             rep = judging_repentance(x , y)
@@ -153,6 +153,17 @@ class SharedMemoryListener(threading.Thread):
                 continue
             x0 = x
             y0 = y
+            if OnlyAdd == True:
+                print(f"进入读取模式")
+                if color == True:
+                    obj.move_1step_ai(x,y)
+                    color = False
+                elif color == False:
+                    obj.move_1step(x,y)
+                    color = True
+                write_point_to_shared_memory(-2, 10)
+                time.sleep(2)
+                continue
             if enable_repentance and x0 > 0 and y0 > 0:
                 obj.delete_1step(x0 , y0)
                 add_message(f"撤回:({x0},{y0})")
@@ -169,20 +180,14 @@ class SharedMemoryListener(threading.Thread):
                     time.sleep(0.11)
                     continue
             if enable_get and x0 >= 0 and y0 >= 0:
-                if ISMAI:
-                    mai.player_move( x0 , y0 )
-                else:
-                    obj.move_1step(True, x, y)
+                obj.move_1step(True, x, y)
                 write_point_to_shared_memory(-2, -1)
                 add_message(f"你:({x0},{y0})")
                 enable_get = False
                 time.sleep(0.5)
-                if ISMAI:
-                    x , y = mai.ai_move()
-                else:
-                    add_message("AI:思考中")
-                    x, y = obj.ai_play_1step_py_python()
-                    add_message(f"AI:({x},{y})")
+                add_message("AI:思考中")
+                x, y = obj.ai_play_1step_py_python()
+                add_message(f"AI:({x},{y})")
                 write_point_to_shared_memory(x, y)
                 count = 5
                 a = -9

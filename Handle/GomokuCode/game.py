@@ -1,16 +1,17 @@
 import os
 import time
-AI_USE_CPP = False
+USEM_AI = False
 
-if not AI_USE_CPP:  # 是否用C++版的AI脚本
+if not USEM_AI:  # 是否用C++版的AI脚本
     from ai import AI1Step
 else:
-    import example
+    from m_ai import AI1Step
 
 class Gomoku:
     
     def __init__(self):
         self.g_map = [[0 for y in range(19)] for x in range(19)]  # 当前的棋盘
+        self.p_map = [[0 for y in range(9)] for x in range(9)]#传入AI的棋盘
         self.cur_step = 0  # 步数
         self.max_search_steps = 4  # 最远搜索3回合之后
 
@@ -29,6 +30,26 @@ class Gomoku:
             if 0 <= pos_x <= 18 and 0 <= pos_y <= 18:  # 判断这个格子能否落子
                 if self.g_map[pos_x][pos_y] == 0:
                     self.g_map[pos_x][pos_y] = 1
+                    self.cur_step += 1
+                    return True
+            return False
+        except ValueError:  # 玩家输入不正确的情况（例如输入了‘A’）
+            return False
+    def move_1step_ai(self, input_by_window=False, pos_x=None, pos_y=None):
+        """
+        玩家落子
+        :param input_by_window: 是否从图形界面输入
+        :param pos_x: 从图形界面输入时，输入的x坐标为多少
+        :param pos_y: 从图形界面输入时，输入的y坐标为多少
+        """
+        try:
+            if not input_by_window:
+                pos_x = int(input('x: '))  # 接受玩家的输入人
+                pos_y = int(input('y: '))
+            #print(f"人下棋点:({pos_x},{pos_y})")
+            if 0 <= pos_x <= 18 and 0 <= pos_y <= 18:  # 判断这个格子能否落子
+                if self.g_map[pos_x][pos_y] == 0:
+                    self.g_map[pos_x][pos_y] = 2
                     self.cur_step += 1
                     return True
             return False
@@ -126,26 +147,6 @@ class Gomoku:
                     self.g_map[x][y] = 2
                     self.cur_step += 1
                     return 
-
-    def ai_play_1step_by_cpp(self):
-        # ai = AI1Step(self, self.cur_step, True)  # AI判断下一步执行什么操作
-        #print(f"AI思考中")
-        st = time.time()
-        mapstring = list()
-        for x in range(19):
-            mapstring.extend(self.g_map[x])
-        try:
-            node_len, ai_ope_x, ai_poe_y = example.ai_1step(self.cur_step, int(True), self.max_search_steps, mapstring)
-            ai_ope = [ai_ope_x, ai_poe_y]
-        except ValueError:
-            raise ValueError('AI程序计算出来的数值不正确')
-        ed = time.time()
-        #print('生成了%d个节点，用时%.4f' % (node_len, ed - st))
-        self.g_map[ai_ope[0]][ai_ope[1]] = 2
-        self.cur_step += 1
-        #print(f"AI:({ai_ope[0]},{ai_ope[1]})")
-        return ai_ope[0] , ai_ope[1]
-
     def ai_play_1step_py_python(self):
         #print(f"AI思考中")
         ai = AI1Step(self, self.cur_step, True)  # AI判断下一步执行什么操作
@@ -164,37 +165,8 @@ class Gomoku:
         return ai_ope[0] , ai_ope[1]
 
     def ai_play_1step(self):
-        if AI_USE_CPP:
-            self.max_search_steps = 3
-            self.ai_play_1step_by_cpp()
-        else:
-            self.max_search_steps = 2
-            self.ai_play_1step_py_python()
-
-    def show(self, res):
-        """显示游戏内容"""
-        for y in range(19):
-            for x in range(19):
-                if self.g_map[x][y] == 0:
-                    print('  ', end='')
-                elif self.g_map[x][y] == 1:
-                    print('〇', end='')
-                elif self.g_map[x][y] == 2:
-                    print('×', end='')
-
-                if x != 18:
-                    print('-', end='')
-            print('\n', end='')
-            for x in range(19):
-                print('|  ', end='')
-            print('\n', end='')
-
-        if res == 1:
-            print('玩家获胜!')
-        elif res == 2:
-            print('电脑获胜!')
-        elif res == 3:
-            print('平局!')
+        self.max_search_steps = 2
+        self.ai_play_1step_py_python()
 
     def play(self):
         while True:

@@ -151,3 +151,67 @@ bool IsProcessRunning()
     // 如果进程还在运行中，则返回true
     return exitCode == STILL_ACTIVE;
 }
+
+bool fileExists(const std::string& filename)
+{
+    std::ifstream infile(filename);
+    return infile.good();
+}
+
+std::string generateNextFileName(const std::string& baseName)
+{
+    std::string newFileName = baseName;
+    int index = 1;
+
+    while (fileExists(newFileName))
+    {
+        std::stringstream ss;
+        ss << baseName.substr(0, baseName.find_last_of('.')) << index << baseName.substr(baseName.find_last_of('.'));
+        newFileName = ss.str();
+        index++;
+    }
+    return newFileName;
+}
+std::string generateLastFileName(const std::string& baseName)
+{
+    std::string lastFileName = baseName;
+    std::string temp = baseName;
+    int index = 0;
+    if (!fileExists(lastFileName))
+    {
+        return NULL;
+    }
+    while (fileExists(temp))
+    {
+        index++;
+        std::stringstream ss;
+        ss << baseName.substr(0, baseName.find_last_of('.')) << index << baseName.substr(baseName.find_last_of('.'));
+        temp = ss.str();
+    }
+    index-=1;
+    if (index == 0)
+    {
+        return baseName;
+    }
+    std::stringstream ss;
+    ss << baseName.substr(0, baseName.find_last_of('.')) << index << baseName.substr(baseName.find_last_of('.'));
+    lastFileName = ss.str();
+    return lastFileName;
+}
+
+
+std::string createFile(const std::string& baseName)
+{
+    std::string newFileName = generateNextFileName(baseName+"Save.txt");
+    std::ofstream outfile(newFileName);
+    if (outfile.is_open())
+    {
+        std::cout << "Created new file: " << newFileName << std::endl;
+        outfile.close();
+    }
+    else
+    {
+        std::cerr << "Failed to create file: " << newFileName << std::endl;
+    }
+    return newFileName;
+}
